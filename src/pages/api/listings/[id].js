@@ -1,4 +1,6 @@
 // src/pages/api/blog/[id].js
+export const prerender = false; // <-- AÑADE ESTA LÍNEA
+
 import { getPostByIdServer, updatePostServer, deletePostServer } from '/src/lib/blog-crud-server';
 import { authorizeAdmin } from '/src/lib/auth-middleware';
 import { Buffer } from 'node:buffer';

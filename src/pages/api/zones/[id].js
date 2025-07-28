@@ -1,4 +1,6 @@
 // src/pages/api/zones/[id].js
+export const prerender = false; // <-- AÑADE ESTA LÍNEA
+
 import { getZoneByIdServer, updateZoneServer, deleteZoneServer } from '../../../lib/zones-crud-server';
 import { authorizeAdmin } from '../../../lib/auth-middleware';
 import { Buffer } from 'node:buffer'; // Necesario para manejar archivos de FormData
