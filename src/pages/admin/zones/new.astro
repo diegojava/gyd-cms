@@ -1,0 +1,24 @@
+---
+import BlogPostForm from "../../components/BlogPostForm.astro";
+import Nav from "../../components/utils/Nav.astro";
+import ZonesPostForm from "../../components/ZonesPostForm.astro";
+import '/src/styles/global.css'; // Importar estilos globales
+---
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Nuevo Post</title>
+    <style> 
+    /* Estilos básicos para la página, o importar CSS global */ 
+        body { font-family: sans-serif; padding: 20px; }
+        section { margin-top: 10vh; }
+    </style>
+</head>
+<body>
+    <Nav currentPage="zones" />
+    <section>
+        <ZonesPostForm />
+    </section>
+</body>
+</html>

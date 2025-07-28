@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase Auth</title>
+    <script type="module">
+        // Pega AQUÍ el objeto firebaseConfig EXACTO de tu consola de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDZNK9I3vvOWHzIElLf0NrlV0Q2Pq_VR4",
+            authDomain: "gyd-cms.firebaseapp.com",
+            projectId: "gyd-cms",
+            storageBucket: "gyd-cms.firebasestorage.app",
+            messagingSenderId: "1015954699793",
+            appId: "1:1015954699793:web:08f330853d12c1fdfae3b0",
+            measurementId: "G-QGPVQ3LLVE"
+        };
+
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginButton = document.getElementById('google-login-btn');
+            const statusDiv = document.getElementById('status');
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    statusDiv.textContent = `Sesión iniciada como: ${user.displayName} (${user.email}). UID: ${user.uid}`;
+                    loginButton.style.display = 'none';
+                } else {
+                    statusDiv.textContent = 'Por favor, inicia sesión.';
+                    loginButton.style.display = 'block';
+                }
+            });
+
+            loginButton.addEventListener('click', async () => {
+                try {
+                    statusDiv.textContent = 'Iniciando sesión...';
+                    await signInWithPopup(auth, provider);
+                    // onAuthStateChanged se encargará de actualizar el estado
+                } catch (error) {
+                    console.error("Error de autenticación:", error);
+                    statusDiv.textContent = `Error: ${error.message}`;
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Test de Autenticación Firebase</h1>
+    <button id="google-login-btn">Iniciar sesión con Google</button>
+    <div id="status"></div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+---
+import BlogPostForm from '../../../components/BlogPostForm.astro';
+
+// Para obtener el 'id' del post de la URL
+export async function getStaticPaths() {
+  // En un CMS real, obtendrías los IDs de Firestore aquí
+  // Para desarrollo, podrías hacer un fetch directo o simplemente
+  // manejar la carga en el cliente para el modo de edición
+  return [{ params: { id: 'some-post-id' } }]; // Solo un placeholder
+}
+
+const { id } = Astro.params;
+---
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Post: {id}</title>
+    <style> /* Estilos básicos */ </style>
+</head>
+<body>
+    <a href="/admin/dashboard">Volver al Dashboard</a>
+    <a href="/admin/posts">Ver Posts</a>
+    <BlogPostForm postId={id} />
+</body>
+</html>

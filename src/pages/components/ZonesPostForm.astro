@@ -1,0 +1,322 @@
+---
+// src/components/ZoneForm.astro
+// Este componente maneja el formulario para crear y editar zonas.
+
+// Props:
+// - zoneId: String, opcional. Si se proporciona, significa que estamos en modo edición
+//           y se cargarán los datos de la zona con ese ID.
+const { zoneId } = Astro.props;
+
+let zoneToEdit = {
+  coverImage: '',
+  translations: {
+    es: { title: '', description: '', excerpt: '' },
+    en: { title: '', description: '', excerpt: '' }
+  },
+  pubDate: ''
+}; // Variable para almacenar los datos de la zona
+
+// NOTA: El fetch inicial para obtener datos de la zona ha sido REMOVIDO de aquí (del frontmatter)
+// y ha sido movido al script del cliente para que se ejecute DESPUÉS de que el usuario
+// haya iniciado sesión y el token esté disponible.
+---
+
+<form id="zone-form" data-zone-id={zoneId}>
+  <h2>{zoneId ? 'Editar Zona' : 'Crear Nueva Zona'}</h2>
+
+  <h3>Traducciones (Español)</h3>
+  <label>
+    Título (ES):
+    <input type="text" name="title_es" value={zoneToEdit?.translations?.es?.title || ''} required />
+  </label>
+  <label>
+    Descripción (ES):
+    <textarea name="description_es" rows="10" required>{zoneToEdit?.translations?.es?.description || ''}</textarea>
+  </label>
+  <label>
+    Resumen (ES):
+    <textarea name="excerpt_es" rows="3">{zoneToEdit?.translations?.es?.excerpt || ''}</textarea>
+  </label>
+
+
+  <h3>Traducciones (Inglés)</h3>
+  <label>
+    Título (EN):
+    <input type="text" name="title_en" value={zoneToEdit?.translations?.en?.title || ''} />
+  </label>
+  <label>
+    Descripción (EN):
+    <textarea name="description_en" rows="10">{zoneToEdit?.translations?.en?.description || ''}</textarea>
+  </label>
+  <label>
+    Resumen (EN):
+    <textarea name="excerpt_en" rows="3">{zoneToEdit?.translations?.en?.excerpt || ''}</textarea>
+  </label>
+
+
+  <label>
+    Imagen de Portada:
+    <input type="file" name="coverImageFile" id="coverImageFileInput" />
+    <div id="current-cover-image-display-area">
+      {zoneToEdit?.coverImage && typeof zoneToEdit.coverImage === 'string' && (
+          <img src={zoneToEdit.coverImage} alt="Portada actual" class="current-cover-image" style="max-width: 150px; margin-top: 10px;" />
+      )}
+    </div>
+    <label id="clear-image-option" style="display: block; margin-top: 10px; {zoneToEdit?.coverImage ? '' : 'display: none;'}">
+        <input type="checkbox" name="coverImage_clear_flag" value="true" /> Eliminar imagen actual
+    </label>
+  </label>
+
+  <label>
+    Fecha de Publicación:
+    <input type="date" name="pubDate"
+           value={zoneToEdit?.pubDate ? new Date(zoneToEdit.pubDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} />
+  </label>
+
+  <button type="submit">{zoneId ? 'Actualizar Zona' : 'Crear Zona'}</button>
+</form>
+
+<script type="module">
+  import { auth } from '/src/lib/firebase-config-client';
+  import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js'; // Usando CDN para Auth
+
+  const form = document.getElementById('zone-form');
+  const zoneId = form.dataset.zoneId; // Obtener el ID de la zona si estamos en modo edición
+  const zoneToEditData = { /* Usaremos este objeto para almacenar los datos cargados dinámicamente */ };
+
+
+  // --- Lógica para cargar datos de la zona en el CLIENTE después de la autenticación ---
+  async function loadZoneDataForEdit(currentZoneId, idToken) {
+    if (!currentZoneId) return; // Si no hay ID de zona, no hay nada que cargar para editar
+
+    try {
+      const response = await fetch(`/api/zones/${currentZoneId}`, { // <-- API Route de zonas
+        headers: { 'Authorization': `Bearer ${idToken}` }, // ¡Ahora enviamos el token!
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        Object.assign(zoneToEditData, data); // Guardar los datos en el objeto global
+        populateForm(zoneToEditData); // Rellenar el formulario
+      } else {
+        console.error(`[ZoneForm.astro] Error al cargar zona ${currentZoneId} para edición:`, data.error);
+        alert(`Error al cargar la zona para editar: ${data.error}`);
+      }
+    } catch (error) {
+      console.error(`[ZoneForm.astro] Error de red al cargar zona ${currentZoneId}:`, error);
+      alert(`Error de red al cargar la zona: ${error.message}`);
+    }
+  }
+
+  // --- Función para rellenar los campos del formulario ---
+  function populateForm(data) {
+    if (!data) return;
+
+    // Rellenar campos de texto (Título, Descripción, Resumen)
+    form.querySelector('[name="title_es"]').value = data.translations?.es?.title || '';
+    form.querySelector('[name="description_es"]').value = data.translations?.es?.description || ''; // <-- 'description' en lugar de 'content'
+    form.querySelector('[name="excerpt_es"]').value = data.translations?.es?.excerpt || '';
+
+    form.querySelector('[name="title_en"]').value = data.translations?.en?.title || '';
+    form.querySelector('[name="description_en"]').value = data.translations?.en?.description || ''; // <-- 'description' en lugar de 'content'
+    form.querySelector('[name="excerpt_en"]').value = data.translations?.en?.excerpt || '';
+
+    // Los campos 'categories' y 'draft' ya no existen para zonas
+    // form.querySelector('[name="categories"]').value = data.categories?.join(',') || '';
+    // form.querySelector('[name="draft"]').checked = data.draft || false;
+
+
+    // Actualizar la fecha
+    if (data.pubDate) {
+        form.querySelector('[name="pubDate"]').value = new Date(data.pubDate).toISOString().split('T')[0];
+    } else {
+        form.querySelector('[name="pubDate"]').value = new Date().toISOString().split('T')[0];
+    }
+    
+    // --- Lógica para mostrar/ocultar y manipular la imagen de portada ---
+    const imageDisplayArea = form.querySelector('#current-cover-image-display-area');
+    let imgElement = imageDisplayArea.querySelector('.current-cover-image');
+    const clearImageOptionLabel = form.querySelector('#clear-image-option');
+    const clearCheckbox = clearImageOptionLabel ? clearImageOptionLabel.querySelector('[name="coverImage_clear_flag"]') : null;
+
+    if (data.coverImage) {
+        if (!imgElement) {
+            imgElement = document.createElement('img');
+            imgElement.className = 'current-cover-image';
+            imgElement.style.maxWidth = '150px';
+            imgElement.style.marginTop = '10px';
+            imageDisplayArea.appendChild(imgElement);
+        }
+        imgElement.src = data.coverImage;
+        imgElement.style.display = 'block';
+
+        if (clearImageOptionLabel) clearImageOptionLabel.style.display = 'block';
+        if (clearCheckbox) clearCheckbox.checked = false;
+    } else {
+        if (imgElement) {
+            imgElement.src = '';
+            imgElement.style.display = 'none';
+        }
+        if (clearImageOptionLabel) clearImageOptionLabel.style.display = 'none';
+        if (clearCheckbox) clearCheckbox.checked = false;
+    }
+  }
+
+
+  // --- Event Listener para el envío del formulario ---
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const user = auth.currentUser;
+    if (!user) {
+      alert('Debes iniciar sesión para realizar esta operación.');
+      window.location.href = '/admin/login';
+      return;
+    }
+
+    const idToken = await user.getIdToken();
+
+    const formData = new FormData(form);
+
+    const zoneData = { // <-- Cambiado a zoneData
+        translations: {
+            es: {
+                title: formData.get('title_es') || '',
+                description: formData.get('description_es') || '', // <-- 'description' en lugar de 'content'
+                excerpt: formData.get('excerpt_es') || '',
+            },
+            en: {
+                title: formData.get('title_en') || '',
+                description: formData.get('description_en') || '', // <-- 'description' en lugar de 'content'
+                excerpt: formData.get('excerpt_en') || '',
+            },
+        },
+        pubDate: formData.get('pubDate') || '',
+        // Los campos 'categories' y 'draft' ya no existen para zonas
+        // categories: formData.get('categories')?.split(',').map(cat => cat.trim()).filter(cat => cat) || [],
+        // draft: formData.get('draft') === 'on' ? true : false,
+    };
+
+    // La lógica para la imagen de portada y el flag de borrado
+    const coverImageFile = formData.get('coverImageFile');
+    const clearImageFlag = formData.get('coverImage_clear_flag') === 'true';
+
+    if (coverImageFile && coverImageFile.size > 0) {
+        // Enviar el nuevo archivo
+    } else if (clearImageFlag) {
+        zoneData.coverImage = null; // <-- Cambiado a zoneData
+    } else {
+        zoneData.coverImage = zoneToEditData.coverImage; // <-- Cambiado a zoneData
+    }
+
+
+    const method = zoneId ? 'PUT' : 'POST'; // <-- zoneId
+    const url = zoneId ? `/api/zones/${zoneId}` : '/api/zones'; // <-- API Route de zonas
+
+    try {
+      const response = await fetch(url, {
+        method: method,
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Operación exitosa!');
+        window.location.href = '/admin/zones'; // Redirigir a la lista de zonas
+      } else {
+        alert('Error en la operación: ' + result.error);
+        console.error('Error del servidor:', result.error);
+      }
+    } catch (error) {
+      console.error("Error al enviar el formulario (red o desconocido):", error);
+      alert('Error de red o desconocido: ' + error.message);
+    }
+  });
+
+
+  // --- Event Listener para cuando la autenticación cambia (y al cargar la página) ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      if (zoneId) { // <-- zoneId
+        user.getIdToken().then(idToken => {
+          loadZoneDataForEdit(zoneId, idToken); // <-- zoneId
+        });
+      }
+    } else {
+      alert('No autenticado. Por favor, inicia sesión.');
+      window.location.href = '/admin/login';
+    }
+  });
+
+</script>
+
+<style>
+  /* Estilos básicos para el formulario */
+  form {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 30px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+  }
+  h3 {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    color: #444;
+  }
+  label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #555;
+  }
+  input[type="text"],
+  input[type="date"],
+  textarea {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    box-sizing: border-box; /* Incluye padding y border en el width */
+  }
+  input[type="file"] {
+    margin-top: 5px;
+  }
+  input[type="checkbox"] {
+    margin-right: 10px;
+  }
+  button[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 18px;
+    cursor: pointer;
+    margin-top: 25px;
+  }
+  button[type="submit"]:hover {
+    background-color: #0056b3;
+  }
+  img {
+    display: block;
+    margin-top: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+  }
+</style>

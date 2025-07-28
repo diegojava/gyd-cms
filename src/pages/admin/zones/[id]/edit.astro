@@ -1,0 +1,37 @@
+---
+import Nav from "../../../components/utils/Nav.astro";
+import ZonesPostForm from "../../../components/ZonesPostForm.astro";
+import "/src/styles/global.css"; // Importar estilos globales
+// Para obtener el 'id' del post de la URL
+export async function getStaticPaths() {
+  // En un CMS real, obtendrías los IDs de Firestore aquí
+  // Para desarrollo, podrías hacer un fetch directo o simplemente
+  // manejar la carga en el cliente para el modo de edición
+  return [{ params: { id: "some-post-id" } }]; // Solo un placeholder
+}
+
+const { id } = Astro.params;
+---
+
+<html lang="es">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editar Post: {id}</title>
+  <style>
+    /* Estilos básicos para la página, o importar CSS global */
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    section {
+      margin-top: 10vh;
+    }
+  </style>
+
+  <body>
+    <Nav currentPage="zones" />
+    <section>
+      <ZonesPostForm zoneId={id} />
+    </section>
+  </body>
+</html>
