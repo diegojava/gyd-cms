@@ -102,7 +102,7 @@ if (postId) {
   // Este script se ejecuta en el cliente (navegador).
   // Se usa la directiva client:load o client:idle en el componente padre si se necesita.
   // Aquí no importamos directamente el SDK de Firebase Admin, solo el SDK de cliente para la autenticación.
-  import { auth } from '/src/lib/firebase-config-client.js'; // Importamos la instancia de autenticación del cliente
+  import { auth } from '/firebase-config-client.js'; // Importamos la instancia de autenticación del cliente
 
   const form = document.getElementById('post-form');
   const postId = form.dataset.postId; // Obtener el ID del post si estamos en modo edición
