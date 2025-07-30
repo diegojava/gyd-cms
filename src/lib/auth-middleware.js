@@ -1,5 +1,5 @@
 // src/lib/auth-middleware.js
-// Middleware para autorizar acceso a rutas protegidas
+// Middleware para autorizar acceso a rutas protegidas .
 import { adminAuth } from './firebase-admin-config';
 
 // *** IMPORTANTE: Obtén tu UID de administrador DESPUÉS de hacer login por primera vez (ver Paso 6) ***
