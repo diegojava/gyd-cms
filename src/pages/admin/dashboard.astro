@@ -1,8 +1,15 @@
 ---
 // src/pages/admin/dashboard.astro
-import { auth } from "../../../public/firebase-config-client"; // Cliente SDK para logout
-import Nav from "../components/utils/Nav.astro";
-import "/src/styles/global.css"; // Importar estilos globales
+import Nav from "../../components/utils/Nav.astro"; // Ruta corregida
+import "/src/styles/global.css";
+
+// 1. Preparamos la configuración de Firebase para pasarla al cliente
+const clientSideFirebaseConfig = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
 ---
 
 <html lang="es">
@@ -10,35 +17,17 @@ import "/src/styles/global.css"; // Importar estilos globales
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Dashboard Admin</title>
-        <style>
-            body {
-                font-family: sans-serif;
-                padding: 20px;
-            }
-            section {
-                margin-top: 10vh;
-            }
-            /* nav { margin-bottom: 20px; }
-        nav a { margin-right: 15px; text-decoration: none; color: blue; }
-        button { background-color: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        button:hover { background-color: #c82333; } */
-        </style>
     </head>
     <body>
-        <Nav />
+        <Nav currentPage="dashboard" />
 
-        <section>
-            <h1 class="mx-5">Bienvenido al Dashboard de Administración</h1>
-            <!-- <p>Aquí podrás gestionar todo el contenido de tu sitio.</p>
-            <ul>
-                <li><a href="/admin/posts/new">Crear Nuevo Post de Blog</a></li>
-                <li>
-                    <a href="/admin/posts">Ver y Editar Posts Existentes</a>
-                </li>
-            </ul> -->
+        <section class="p-4 md:p-8">
+            <h1 class="text-3xl font-bold mb-8">
+                Bienvenido al Dashboard de Administración
+            </h1>
 
             <div
-                class="grid mt-8 mb-8 border border-gray-200 rounded-lg shadow-xs dark:border-gray-700 md:mb-12 md:grid-cols-2 bg-white dark:bg-gray-800"
+                class="grid border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 md:grid-cols-2 bg-white dark:bg-gray-800"
             >
                 <figure
                     class="flex flex-col items-center justify-center p-8 text-center bg-white border-b border-gray-200 rounded-t-lg md:rounded-t-none md:rounded-ss-lg md:border-e dark:bg-gray-800 dark:border-gray-700"
@@ -52,20 +41,16 @@ import "/src/styles/global.css"; // Importar estilos globales
                             Publicaciones
                         </h3>
                         <p class="my-4">
-                            Publicaciones que van al blog de Get Your Depa.
-                            <ul>
-                                <li>
-                                    <a href="/admin/posts"
-                                        >Listado de posts existentes</a>
-                                </li>
-                                <li>
-                                    <a href="/admin/posts/new"
-                                        >Crear, editar y eliminar posts.</a>
-                                </li>
-                            </ul>
+                            Gestiona las entradas del blog de Get Your Depa.
                         </p>
+                        <a
+                            href="/admin/posts"
+                            class="text-blue-600 hover:underline"
+                            >Ir a Publicaciones →</a
+                        >
                     </blockquote>
                 </figure>
+
                 <figure
                     class="flex flex-col items-center justify-center p-8 text-center bg-white border-b border-gray-200 md:rounded-se-lg dark:bg-gray-800 dark:border-gray-700"
                 >
@@ -78,20 +63,16 @@ import "/src/styles/global.css"; // Importar estilos globales
                             Zonas
                         </h3>
                         <p class="my-4">
-                            Zonas que van al sitio de Get Your Depa.
-                            <ul>
-                                <li>
-                                    <a href="/admin/zones"
-                                        >Listado de zonas existentes</a>
-                                </li>
-                                <li>
-                                    <a href="/admin/zones/new"
-                                        >Crear, editar y eliminar zonas.</a>
-                                </li>
-                            </ul>
+                            Administra las zonas que se muestran en el sitio.
                         </p>
+                        <a
+                            href="/admin/zones"
+                            class="text-blue-600 hover:underline"
+                            >Ir a Zonas →</a
+                        >
                     </blockquote>
                 </figure>
+
                 <figure
                     class="flex flex-col items-center justify-center p-8 text-center bg-white border-b border-gray-200 md:rounded-es-lg md:border-b-0 md:border-e dark:bg-gray-800 dark:border-gray-700"
                 >
@@ -104,80 +85,55 @@ import "/src/styles/global.css"; // Importar estilos globales
                             Departamentos
                         </h3>
                         <p class="my-4">
-                            Departamentos que van al sitio de Get Your Depa.
-                            <ul>
-                                <li>
-                                    <a href="/admin/listings"
-                                        >Listado de departamentos existentes</a>
-                                </li>
-                                <li>
-                                    <a href="/admin/listings/new"
-                                        >Crear, editar y eliminar departamentos.</a>
-                                </li>
-                            </ul>
+                            Gestiona los listados de departamentos.
                         </p>
+                        <a
+                            href="/admin/listings"
+                            class="text-blue-600 hover:underline"
+                            >Ir a Departamentos →</a
+                        >
                     </blockquote>
                 </figure>
-                <!-- <figure
-                    class="flex flex-col items-center justify-center p-8 text-center bg-white border-gray-200 rounded-b-lg md:rounded-se-lg dark:bg-gray-800 dark:border-gray-700"
-                >
-                    <blockquote
-                        class="max-w-2xl mx-auto mb-4 text-gray-500 lg:mb-8 dark:text-gray-400"
-                    >
-                        <h3
-                            class="text-lg font-semibold text-gray-900 dark:text-white"
-                        >
-                            Efficient Collaborating
-                        </h3>
-                        <p class="my-4">
-                            You have many examples that can be used to create a
-                            fast prototype for your team."
-                        </p>
-                    </blockquote>
-                    <figcaption class="flex items-center justify-center">
-                        <img
-                            class="rounded-full w-9 h-9"
-                            src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/joseph-mcfall.png"
-                            alt="profile picture"
-                        />
-                        <div
-                            class="space-y-0.5 font-medium dark:text-white text-left rtl:text-right ms-3"
-                        >
-                            <div>Joseph McFall</div>
-                            <div
-                                class="text-sm text-gray-500 dark:text-gray-400"
-                            >
-                                CTO at Google
-                            </div>
-                        </div>
-                    </figcaption>
-                </figure> -->
             </div>
         </section>
-        <script type="module">
-            import { auth } from "/src/lib/firebase-config-client";
-            import {
-                signOut,
-                onAuthStateChanged,
-            } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
 
-            const logoutButton = document.getElementById("logout-btn");
+        <script
+            type="module"
+            define:vars={{ firebaseConfig: clientSideFirebaseConfig }}
+        >
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+            import {
+                getAuth,
+                onAuthStateChanged,
+                signOut,
+            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+            // Inicializamos Firebase con la config que viene del servidor
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+
+            // Verificamos si el usuario tiene sesión activa para proteger la ruta
             onAuthStateChanged(auth, (user) => {
                 if (!user) {
-                    // Si el usuario no está logueado, redirigir a la página de login
+                    // Si no hay sesión, lo redirigimos a la página de login
                     window.location.href = "/admin/login";
                 }
             });
 
-            logoutButton.addEventListener("click", async () => {
-                try {
-                    await signOut(auth);
-                    window.location.href = "/admin/login";
-                } catch (error) {
-                    console.error("Error al cerrar sesión:", error);
-                    alert("Error al cerrar sesión.");
-                }
-            });
+            // La lógica del botón de logout usualmente está en el componente Nav,
+            // pero si está aquí, nos aseguramos de que no de error si no encuentra el botón.
+            const logoutButton = document.getElementById("logout-btn");
+            if (logoutButton) {
+                logoutButton.addEventListener("click", async () => {
+                    try {
+                        await signOut(auth);
+                        window.location.href = "/admin/login";
+                    } catch (error) {
+                        console.error("Error al cerrar sesión:", error);
+                        alert("Error al cerrar sesión.");
+                    }
+                });
+            }
         </script>
     </body>
 </html>
