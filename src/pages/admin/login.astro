@@ -1,62 +1,144 @@
 ---
 // src/pages/admin/login.astro
 // No necesita imports del Admin SDK aquí.
+
+const configParaElCliente = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
 ---
-<!DOCTYPE html>
+
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login de Administración</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f2f5; margin: 0;}
-        .login-container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
-        button { background-color: #4285F4; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; margin-left: auto; margin-right: auto;}
-        button:hover { background-color: #357ae8; }
-        .google-icon { width: 20px; height: 20px; }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <h1>Acceso al Panel de Administración</h1>
-        <button id="google-login-btn">
-            <img src="/assets/google-icon.png" alt="Google Icon" class="google-icon" />
-            Iniciar sesión con Google 
-        </button>
-        <p id="login-status"></p>
-    </div>
-
-    <script type="module">
-        import { auth } from '/firebase-config-client.js'; // Cliente SDK para autenticación
-        import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-
-        const loginButton = document.getElementById('google-login-btn');
-        const loginStatus = document.getElementById('login-status');
-        const provider = new GoogleAuthProvider();
-
-        // Verificar si el usuario ya está logueado
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loginStatus.textContent = `Sesión iniciada como: ${user.displayName} (${user.email}). Redirigiendo...`;
-                window.location.href = '/admin/dashboard';
-            } else {
-                loginStatus.textContent = 'Por favor, inicia sesión para acceder al CMS de Get Your Depa';
-                loginButton.style.display = 'block';
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login de Administración</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background-color: #f0f2f5;
+                margin: 0;
             }
-        });
-
-        loginButton.addEventListener('click', async () => {
-            try {
-                loginButton.disabled = true;
-                loginStatus.textContent = 'Iniciando sesión...';
-                await signInWithPopup(auth, provider);
-                // onAuthStateChanged manejará la redirección
-            } catch (error) {
-                console.error("Error de autenticación con Google:", error);
-                loginStatus.textContent = `Error al iniciar sesión: ${error.message}`;
-                loginButton.disabled = false;
+            .login-container {
+                background-color: white;
+                padding: 40px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                text-align: center;
             }
-        });
-    </script>
-</body>
+            button {
+                background-color: #4285f4;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                margin-top: 20px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            button:hover {
+                background-color: #357ae8;
+            }
+            .google-icon {
+                width: 20px;
+                height: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <h1>Acceso al Panel de Administración</h1>
+            <button id="google-login-btn">
+                <img
+                    src="/assets/google-icon.png"
+                    alt="Google Icon"
+                    class="google-icon"
+                />
+                Iniciar sesión con Google
+            </button>
+            <p id="login-status"></p>
+        </div>
+
+        <script define:vars={{ firebaseConfig: configParaElCliente }}>
+            // --- LADO DEL CLIENTE ---
+            // La variable "firebaseConfig" ahora existe aquí, pasada desde el servidor.
+
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+            import {
+                getAuth,
+                GoogleAuthProvider,
+                signInWithPopup,
+                onAuthStateChanged,
+            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+            // Inicializa Firebase con la configuración que recibimos
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const provider = new GoogleAuthProvider();
+
+            // Tu lógica de login
+            const loginButton = document.getElementById("google-login-btn");
+            loginButton.addEventListener("click", () => {
+                signInWithPopup(auth, provider)
+                    .then((result) => {
+                        // Login exitoso, redirigir al dashboard
+                        console.log("Login exitoso:", result.user);
+                        window.location.href = "/admin/dashboard";
+                    })
+                    .catch((error) => {
+                        console.error("Error en el login:", error);
+                    });
+            });
+        </script>
+
+        <script type="module">
+            import {
+                GoogleAuthProvider,
+                signInWithPopup,
+                onAuthStateChanged,
+            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+            const loginButton = document.getElementById("google-login-btn");
+            const loginStatus = document.getElementById("login-status");
+            const provider = new GoogleAuthProvider();
+
+            // Verificar si el usuario ya está logueado
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    loginStatus.textContent = `Sesión iniciada como: ${user.displayName} (${user.email}). Redirigiendo...`;
+                    window.location.href = "/admin/dashboard";
+                } else {
+                    loginStatus.textContent =
+                        "Por favor, inicia sesión para acceder al CMS de Get Your Depa";
+                    loginButton.style.display = "block";
+                }
+            });
+
+            loginButton.addEventListener("click", async () => {
+                try {
+                    loginButton.disabled = true;
+                    loginStatus.textContent = "Iniciando sesión...";
+                    await signInWithPopup(auth, provider);
+                    // onAuthStateChanged manejará la redirección
+                } catch (error) {
+                    console.error("Error de autenticación con Google:", error);
+                    loginStatus.textContent = `Error al iniciar sesión: ${error.message}`;
+                    loginButton.disabled = false;
+                }
+            });
+        </script>
+    </body>
 </html>
