@@ -1,7 +1,15 @@
 ---
 import BlogPostForm from "../../components/BlogPostForm.astro";
 import Nav from "../../components/utils/Nav.astro";
-import '/src/styles/global.css'; // Importar estilos globales
+import "/src/styles/global.css"; // Importar estilos globales
+
+// 1. Preparamos la config en la PÁGINA
+const firebaseConfig = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
 ---
 
 <html lang="es">
@@ -27,7 +35,7 @@ import '/src/styles/global.css'; // Importar estilos globales
     <body>
         <Nav currentPage="posts" />
         <section>
-            <BlogPostForm />
+            <BlogPostForm firebaseConfig={firebaseConfig} />
         </section>
     </body>
 </html>

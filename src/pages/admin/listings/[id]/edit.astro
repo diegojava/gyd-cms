@@ -1,26 +1,37 @@
 ---
-import BlogPostForm from '../../../components/BlogPostForm.astro';
+import BlogPostForm from "../../../components/BlogPostForm.astro";
 
 // Para obtener el 'id' del post de la URL
 export async function getStaticPaths() {
   // En un CMS real, obtendrías los IDs de Firestore aquí
   // Para desarrollo, podrías hacer un fetch directo o simplemente
   // manejar la carga en el cliente para el modo de edición
-  return [{ params: { id: 'some-post-id' } }]; // Solo un placeholder
+  return [{ params: { id: "some-post-id" } }]; // Solo un placeholder
 }
+
+// 1. Preparamos la config en la PÁGINA
+const firebaseConfig = {
+  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
 
 const { id } = Astro.params;
 ---
+
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Editar Post: {id}</title>
-    <style> /* Estilos básicos */ </style>
-</head>
-<body>
+    <style>
+      /* Estilos básicos */
+    </style>
+  </head>
+  <body>
     <a href="/admin/dashboard">Volver al Dashboard</a>
     <a href="/admin/posts">Ver Posts</a>
-    <BlogPostForm postId={id} />
-</body>
+    <BlogPostForm postId={id} firebaseConfig={firebaseConfig} />
+  </body>
 </html>

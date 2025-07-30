@@ -1,159 +1,203 @@
 ---
-// src/components/BlogPostForm.astro
-// Este componente se encarga de renderizar el formulario
-// y de manejar la lógica de envío al servidor (API Routes de Astro).
+// src/components/ListingsPostForm.astro
 
-// Props:
-// - postId: String, opcional. Si se proporciona, significa que estamos en modo edición
-//           y se intentarán cargar los datos del post con ese ID.
-const { postId } = Astro.props;
-
-// Variable para almacenar los datos del post si estamos en modo edición.
-// Se inicializa a null y se llenará si postId existe y la API devuelve datos.
-let postToEdit = null;
-
-// Si postId existe, intentamos cargar los datos del post para la edición.
-// Esta parte se ejecuta en el servidor (durante la compilación o en una SSR Function)
-// cuando la página que usa este componente es renderizada.
-if (postId) {
-  try {
-    // Aquí NO usamos el Admin SDK directamente. Llamamos a nuestra propia API Route de Astro.
-    // Astro hace el fetch desde el servidor (build time o server-side rendering).
-    // NOTA: Para este fetch inicial, no se necesita token de auth porque la API GET /api/blog/[id]
-    // debería permitir lectura para cualquier usuario autenticado (con la lógica de auth-middleware).
-    // Si tu GET también requiere tu UID específico, entonces este fetch inicial fallará
-    // si no hay forma de pasar el token aquí. Para un CMS, a menudo el GET es más permisivo
-    // o se maneja la redirección al login si no hay sesión.
-    const response = await fetch(`${Astro.url.origin}/api/blog/${postId}`);
-    if (response.ok) {
-      postToEdit = await response.json();
-    } else {
-      console.error(`[BlogPostForm.astro] Error al cargar post ${postId} para edición:`, await response.json());
-      // Si hay un error al cargar, postToEdit seguirá siendo null, y el formulario estará vacío.
-    }
-  } catch (error) {
-    console.error(`[BlogPostForm.astro] Error de red al cargar post ${postId}:`, error);
-  }
-}
+// 1. Recibimos la configuración y el ID como props.
+// Se elimina el fetch que se ejecutaba en el servidor.
+const { postId, firebaseConfig } = Astro.props;
 ---
 
 <form id="post-form" data-post-id={postId}>
-  <h2>{postId ? 'Editar Post' : 'Crear Nuevo Post'}</h2>
+  <h2>{postId ? "Editar Listing" : "Crear Nuevo Listing"}</h2>
 
+  <h3>Traducciones (Español)</h3>
   <label>
     Título (ES):
-    <input type="text" name="title_es" value={postToEdit?.translations?.es?.title || ''} required />
+    <input type="text" name="title_es" required />
   </label>
   <label>
     Contenido (ES):
-    <textarea name="content_es" rows="10" required>{postToEdit?.translations?.es?.content || ''}</textarea>
+    <textarea name="content_es" rows="10" required></textarea>
   </label>
   <label>
     Resumen (ES):
-    <textarea name="content_en" rows="10">{postToEdit?.translations?.es?.excerpt || ''}</textarea>
+    <textarea name="excerpt_es" rows="3"></textarea>
   </label>
 
+  <h3>Traducciones (Inglés)</h3>
   <label>
     Título (EN):
-    <input type="text" name="title_en" value={postToEdit?.translations?.en?.title || ''} />
+    <input type="text" name="title_en" />
   </label>
   <label>
     Contenido (EN):
-    <textarea name="content_en" rows="10">{postToEdit?.translations?.en?.content || ''}</textarea>
+    <textarea name="content_en" rows="10"></textarea>
   </label>
   <label>
     Resumen (EN):
-    <textarea name="content_en" rows="10">{postToEdit?.translations?.en?.excerpt || ''}</textarea>
+    <textarea name="excerpt_en" rows="3"></textarea>
   </label>
 
   <label>
     Categorías (separadas por comas):
-    <input type="text" name="categories" value={postToEdit?.categories?.join(',') || ''} />
+    <input type="text" name="categories" />
   </label>
 
   <label>
     Imagen de Portada:
     <input type="file" name="coverImageFile" id="coverImageFileInput" />
-    {postToEdit?.coverImage && typeof postToEdit.coverImage === 'string' && (
-        <>
-            <p>Imagen actual:</p>
-            <img src={postToEdit.coverImage} alt="Portada actual" style="max-width: 150px; margin-top: 10px;" />
-            <label style="display: block; margin-top: 10px;">
-                <input type="checkbox" name="coverImage_clear_flag" value="true" /> Eliminar imagen actual
-            </label>
-        </>
-    )}
+    <div id="current-cover-image-display-area"></div>
+    <label
+      id="clear-image-option"
+      style="display: block; margin-top: 10px; display: none;"
+    >
+      <input type="checkbox" name="coverImage_clear_flag" value="true" />
+      Eliminar imagen actual
+    </label>
   </label>
 
   <label>
     Fecha de Publicación:
-    <input type="date" name="pubDate"
-           value={postToEdit?.pubDate ? new Date(postToEdit.pubDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} />
+    <input type="date" name="pubDate" />
   </label>
 
   <label>
-    <input type="checkbox" name="draft" checked={postToEdit?.draft ?? false} /> Borrador
+    <input type="checkbox" name="draft" /> Borrador
   </label>
 
-  <button type="submit">{postId ? 'Actualizar Post' : 'Crear Post'}</button>
+  <button type="submit"
+    >{postId ? "Actualizar Listing" : "Crear Listing"}</button
+  >
 </form>
 
-<script type="module">
-  // Este script se ejecuta en el cliente (navegador).
-  // Se usa la directiva client:load o client:idle en el componente padre si se necesita.
-  // Aquí no importamos directamente el SDK de Firebase Admin, solo el SDK de cliente para la autenticación.
-  import { auth } from '/firebase-config-client.js'; // Importamos la instancia de autenticación del cliente
+<script type="module" define:vars={{ firebaseConfig }}>
+  // 3. Inicializamos Firebase aquí, igual que en los otros componentes
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const form = document.getElementById('post-form');
-  const postId = form.dataset.postId; // Obtener el ID del post si estamos en modo edición
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Prevenir el envío de formulario por defecto
+  const form = document.getElementById("post-form");
+  const currentPostId = form.dataset.postId;
 
+  // --- Lógica para cargar y rellenar datos si estamos editando ---
+  async function loadPostDataForEdit(id, token) {
+    try {
+      // NOTA: Asegúrate que la ruta a tu API sea la correcta para "listings"
+      const response = await fetch(`/api/listings/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        populateForm(data);
+      } else {
+        alert(`Error al cargar el listing para editar: ${data.error}`);
+      }
+    } catch (error) {
+      alert(`Error de red al cargar el listing: ${error.message}`);
+    }
+  }
+
+  function populateForm(data) {
+    if (!data) return;
+    form.querySelector('[name="title_es"]').value =
+      data.translations?.es?.title || "";
+    form.querySelector('[name="content_es"]').value =
+      data.translations?.es?.content || "";
+    form.querySelector('[name="excerpt_es"]').value =
+      data.translations?.es?.excerpt || "";
+    form.querySelector('[name="title_en"]').value =
+      data.translations?.en?.title || "";
+    form.querySelector('[name="content_en"]').value =
+      data.translations?.en?.content || "";
+    form.querySelector('[name="excerpt_en"]').value =
+      data.translations?.en?.excerpt || "";
+    form.querySelector('[name="categories"]').value =
+      data.categories?.join(",") || "";
+
+    const pubDate =
+      data.pubDate && data.pubDate.seconds
+        ? new Date(data.pubDate.seconds * 1000)
+        : new Date(data.pubDate);
+    form.querySelector('[name="pubDate"]').value = pubDate
+      .toISOString()
+      .split("T")[0];
+
+    form.querySelector('[name="draft"]').checked = data.draft || false;
+
+    // Lógica para mostrar imagen actual
+    const imageDisplayArea = form.querySelector(
+      "#current-cover-image-display-area",
+    );
+    if (data.coverImage) {
+      imageDisplayArea.innerHTML = `<p>Imagen actual:</p><img src="${data.coverImage}" alt="Portada actual" style="max-width: 150px; margin-top: 10px;" />`;
+      form.querySelector("#clear-image-option").style.display = "block";
+    }
+  }
+
+  // --- Lógica de envío del formulario ---
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
     const user = auth.currentUser;
     if (!user) {
-      alert('Debes iniciar sesión para realizar esta operación.');
-      // Opcional: Redirigir al usuario a la página de login si no está autenticado
-      window.location.href = '/admin/login';
+      alert("Debes iniciar sesión para realizar esta operación.");
+      window.location.href = "/admin/login";
       return;
     }
 
-    const idToken = await user.getIdToken(); // Obtener el token de ID del usuario autenticado
+    const idToken = await user.getIdToken();
+    const formData = new FormData(form);
 
-    const formData = new FormData(form); // Recolectar todos los datos del formulario, incluyendo el archivo de imagen
-
-    // Determinar el método HTTP (PUT para actualizar, POST para crear) y la URL de la API
-    const method = postId ? 'PUT' : 'POST';
-    const url = postId ? `/api/blog/${postId}` : '/api/blog';
+    const method = currentPostId ? "PUT" : "POST";
+    // NOTA: Asegúrate que la ruta a tu API sea la correcta para "listings"
+    const url = currentPostId
+      ? `/api/listings/${currentPostId}`
+      : "/api/listings";
 
     try {
       const response = await fetch(url, {
         method: method,
-        body: formData, // FormData se envía directamente y establece el Content-Type correcto (multipart/form-data)
-        headers: {
-          'Authorization': `Bearer ${idToken}`, // Añadir el encabezado de autorización con el token
-        },
+        body: formData,
+        headers: { Authorization: `Bearer ${idToken}` },
       });
-
-      const result = await response.json(); // Leer la respuesta JSON del servidor
-
+      const result = await response.json();
       if (response.ok) {
-        alert('Operación exitosa!');
-        // Opcional: Recargar la página o redirigir a la lista de posts
-        window.location.href = '/admin/posts'; // Redirigir a la lista de posts
+        alert("Operación exitosa!");
+        window.location.href = "/admin/listings"; // Redirigir a la lista de listings
       } else {
-        alert('Error en la operación: ' + result.error);
-        console.error('Error del servidor:', result.error);
+        alert("Error en la operación: " + result.error);
       }
     } catch (error) {
-      console.error("Error al enviar el formulario (error de red o desconocido):", error);
-      alert('Error de red o desconocido: ' + error.message);
+      alert("Error de red o desconocido: " + error.message);
+    }
+  });
+
+  // --- Verificación de autenticación al cargar la página ---
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // Si estamos en modo edición, cargar los datos
+      if (currentPostId) {
+        user.getIdToken().then((idToken) => {
+          loadPostDataForEdit(currentPostId, idToken);
+        });
+      } else {
+        // Si estamos creando, simplemente asignamos la fecha actual por defecto
+        form.querySelector('[name="pubDate"]').value = new Date()
+          .toISOString()
+          .split("T")[0];
+      }
+    } else {
+      // Si no hay sesión, redirigir al login
+      alert("No autenticado. Por favor, inicia sesión.");
+      window.location.href = "/admin/login";
     }
   });
 </script>
 
 <style>
-  /* Estilos básicos para el formulario */
   form {
     max-width: 800px;
     margin: 20px auto;
@@ -161,12 +205,11 @@ if (postId) {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
   h2 {
     text-align: center;
     margin-bottom: 25px;
-    color: #333;
   }
   label {
     display: block;

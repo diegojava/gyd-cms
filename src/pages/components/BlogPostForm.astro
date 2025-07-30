@@ -1,159 +1,179 @@
 ---
 // src/components/BlogPostForm.astro
-// Este componente maneja el formulario para crear y editar posts de blog.
+// Recibimos la configuración de Firebase y el postId como propiedades (props).
+const { postId, firebaseConfig } = Astro.props;
 
-// Props:
-// - postId: String, opcional. Si se proporciona, estamos en modo edición.
-const { postId } = Astro.props;
-
-// Inicializamos postToEdit como null. Los datos se cargarán dinámicamente en el cliente.
+// Inicializamos postToEdit como null.
+// Los datos para la edición se cargarán dinámicamente en el cliente.
 let postToEdit = null;
 ---
 
 <form id="post-form" data-post-id={postId}>
-  <h2>{postId ? 'Editar Post' : 'Crear Nuevo Post'}</h2>
+  <h2>{postId ? "Editar Post" : "Crear Nuevo Post"}</h2>
 
   <h3>Traducciones (Español)</h3>
   <label>
     Título (ES):
-    <input type="text" name="title_es" value={postToEdit?.translations?.es?.title || ''} required />
+    <input
+      type="text"
+      name="title_es"
+      value={postToEdit?.translations?.es?.title || ""}
+      required
+    />
   </label>
   <label>
     Contenido (ES):
-    <textarea name="content_es" id="content_es_editor" rows="10">{postToEdit?.translations?.es?.content || ''}</textarea>
+    <textarea name="content_es" id="content_es_editor" rows="10">
+      {postToEdit?.translations?.es?.content || ""}
+    </textarea>
   </label>
   <label>
     Resumen (ES):
-    <textarea name="excerpt_es" id="excerpt_es_editor" rows="3">{postToEdit?.translations?.es?.excerpt || ''}</textarea>
+    <textarea name="excerpt_es" id="excerpt_es_editor" rows="3">
+      {postToEdit?.translations?.es?.excerpt || ""}
+    </textarea>
   </label>
-
 
   <h3>Traducciones (Inglés)</h3>
   <label>
     Título (EN):
-    <input type="text" name="title_en" value={postToEdit?.translations?.en?.title || ''} />
+    <input
+      type="text"
+      name="title_en"
+      value={postToEdit?.translations?.en?.title || ""}
+    />
   </label>
   <label>
     Contenido (EN):
-    <textarea name="content_en" id="content_en_editor" rows="10">{postToEdit?.translations?.en?.content || ''}</textarea>
+    <textarea name="content_en" id="content_en_editor" rows="10">
+      {postToEdit?.translations?.en?.content || ""}
+    </textarea>
   </label>
   <label>
     Resumen (EN):
-    <textarea name="excerpt_en" id="excerpt_en_editor" rows="3">{postToEdit?.translations?.en?.excerpt || ''}</textarea>
+    <textarea name="excerpt_en" id="excerpt_en_editor" rows="3">
+      {postToEdit?.translations?.en?.excerpt || ""}
+    </textarea>
   </label>
-
 
   <label>
     Categorías (separadas por comas):
-    <input type="text" name="categories" value={postToEdit?.categories?.join(',') || ''} />
+    <input
+      type="text"
+      name="categories"
+      value={postToEdit?.categories?.join(",") || ""}
+    />
   </label>
 
   <label>
     Imagen de Portada:
     <input type="file" name="coverImageFile" id="coverImageFileInput" />
-    <div id="current-cover-image-display-area">
-      </div>
-    
-    <label id="clear-image-option" style="display: block; margin-top: 10px; display: none;">
-        <input type="checkbox" name="coverImage_clear_flag" value="true" /> Eliminar imagen actual
+    <div id="current-cover-image-display-area"></div>
+
+    <label
+      id="clear-image-option"
+      style="display: block; margin-top: 10px; display: none;"
+    >
+      <input type="checkbox" name="coverImage_clear_flag" value="true" />
+      Eliminar imagen actual
     </label>
   </label>
 
   <label>
     Fecha de Publicación:
-    <input type="date" name="pubDate"
-           value={postToEdit?.pubDate ? new Date(postToEdit.pubDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} />
+    <input
+      type="date"
+      name="pubDate"
+      value={postToEdit?.pubDate
+        ? new Date(postToEdit.pubDate).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0]}
+    />
   </label>
 
   <label>
-    <input type="checkbox" name="draft" {postToEdit?.draft ? 'checked' : ''} /> Es Borrador
+    <input type="checkbox" name="draft" {postToEdit?.draft ? "checked" : ""} />
+    Es Borrador
   </label>
 
-  <button type="submit">{postId ? 'Actualizar Post' : 'Crear Post'}</button>
+  <button type="submit">{postId ? "Actualizar Post" : "Crear Post"}</button>
 </form>
 
-<script type="module">
-  import { auth } from '/src/lib/firebase-config-client';
-  import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js'; // Usando CDN para Auth
+<script type="module" define:vars={{ firebaseConfig }}>
+  // 1. INICIALIZAMOS FIREBASE CON LA CONFIGURACIÓN RECIBIDA
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged,
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const form = document.getElementById('post-form');
-  const postId = form.dataset.postId; // Obtener el ID del post si estamos en modo edición
-  const postToEditData = { /* Usaremos este objeto para almacenar los datos cargados dinámicamente */ };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app); // 'auth' ahora existe aquí y es accesible para el resto del script
 
+  // 2. EL RESTO DE TU CÓDIGO (YA ESTABA BIEN)
+  const form = document.getElementById("post-form");
+  const currentPostId = form.dataset.postId;
+  const postToEditData = {};
 
   // --- Inicializar TinyMCE ---
-  // YA NO NECESITAMOS VARIABLES GLOBALES para las instancias de editor
-  // Accederemos a ellas con tinymce.get('ID_DEL_EDITOR')
   function initializeTinyMCE() {
-    if (typeof tinymce === 'undefined') {
-      console.warn("TinyMCE no está cargado. Reintentando en 100ms...");
-      setTimeout(initializeTinyMCE, 100); // Reintentar si TinyMCE no está listo
+    if (typeof tinymce === "undefined") {
+      setTimeout(initializeTinyMCE, 100);
       return;
     }
-
-    // Asegurarse de que el editor no esté ya inicializado en el mismo selector
-    // y si lo está, destruirlo para evitar errores.
-    ['content_es_editor', 'excerpt_es_editor', 'content_en_editor', 'excerpt_en_editor'].forEach(id => {
-        if (tinymce.get(id)) {
-            tinymce.get(id).destroy();
-        }
+    [
+      "content_es_editor",
+      "excerpt_es_editor",
+      "content_en_editor",
+      "excerpt_en_editor",
+    ].forEach((id) => {
+      if (tinymce.get(id)) tinymce.get(id).destroy();
     });
-
     tinymce.init({
-      selector: '#content_es_editor',
-      plugins: 'advlist link image lists code table media wordcount',
-      toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code',
+      selector: "#content_es_editor",
+      plugins: "advlist link image lists code table media wordcount",
+      toolbar:
+        "undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code",
       height: 300,
-      // No necesitamos setup aquí, accedemos con tinymce.get()
     });
-
     tinymce.init({
-      selector: '#excerpt_es_editor',
-      plugins: 'wordcount',
-      toolbar: 'undo redo | bold italic',
+      selector: "#excerpt_es_editor",
+      plugins: "wordcount",
+      toolbar: "undo redo | bold italic",
       height: 150,
       menubar: false,
     });
-
     tinymce.init({
-      selector: '#content_en_editor',
-      plugins: 'advlist link image lists code table media wordcount',
-      toolbar: 'undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code',
+      selector: "#content_en_editor",
+      plugins: "advlist link image lists code table media wordcount",
+      toolbar:
+        "undo redo | formatselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | code",
       height: 300,
     });
-
     tinymce.init({
-      selector: '#excerpt_en_editor',
-      plugins: 'wordcount',
-      toolbar: 'undo redo | bold italic',
+      selector: "#excerpt_en_editor",
+      plugins: "wordcount",
+      toolbar: "undo redo | bold italic",
       height: 150,
       menubar: false,
     });
   }
-
-  // Inicializar TinyMCE cuando el DOM esté completamente cargado
-  document.addEventListener('DOMContentLoaded', initializeTinyMCE);
-
+  document.addEventListener("DOMContentLoaded", initializeTinyMCE);
 
   // --- Función para cargar datos del post en el CLIENTE después de la autenticación ---
-  async function loadPostDataForEdit(currentPostId, idToken) {
-    if (!currentPostId) return;
-
+  async function loadPostDataForEdit(id, token) {
+    if (!id) return;
     try {
-      const response = await fetch(`/api/blog/${currentPostId}`, {
-        headers: { 'Authorization': `Bearer ${idToken}` },
+      const response = await fetch(`/api/blog/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-
       if (response.ok) {
         Object.assign(postToEditData, data);
         populateForm(postToEditData);
       } else {
-        console.error(`[BlogPostForm.astro] Error al cargar post ${currentPostId} para edición:`, data.error);
         alert(`Error al cargar el post para editar: ${data.error}`);
       }
     } catch (error) {
-      console.error(`[BlogPostForm.astro] Error de red al cargar post ${currentPostId}:`, error);
       alert(`Error de red al cargar el post: ${error.message}`);
     }
   }
@@ -161,159 +181,152 @@ let postToEdit = null;
   // --- Función para rellenar los campos del formulario (incluyendo TinyMCE) ---
   function populateForm(data) {
     if (!data) return;
-
-    // Rellenar campos de texto estándar
-    form.querySelector('[name="title_es"]').value = data.translations?.es?.title || '';
-    form.querySelector('[name="title_en"]').value = data.translations?.en?.title || '';
-    form.querySelector('[name="categories"]').value = data.categories?.join(',') || '';
+    form.querySelector('[name="title_es"]').value =
+      data.translations?.es?.title || "";
+    form.querySelector('[name="title_en"]').value =
+      data.translations?.en?.title || "";
+    form.querySelector('[name="categories"]').value =
+      data.categories?.join(",") || "";
     if (data.pubDate) {
-        form.querySelector('[name="pubDate"]').value = new Date(data.pubDate).toISOString().split('T')[0];
+      const date = data.pubDate.seconds
+        ? new Date(data.pubDate.seconds * 1000)
+        : new Date(data.pubDate);
+      form.querySelector('[name="pubDate"]').value = date
+        .toISOString()
+        .split("T")[0];
     } else {
-        form.querySelector('[name="pubDate"]').value = new Date().toISOString().split('T')[0];
+      form.querySelector('[name="pubDate"]').value = new Date()
+        .toISOString()
+        .split("T")[0];
     }
     form.querySelector('[name="draft"]').checked = data.draft || false;
 
-    // Rellenar editores TinyMCE, usando tinymce.get() para asegurar la instancia correcta
-    // Usamos setTimeout para dar tiempo a TinyMCE a inicializarse completamente
     setTimeout(() => {
-        if (tinymce.get('content_es_editor')) tinymce.get('content_es_editor').setContent(data.translations?.es?.content || '');
-        if (tinymce.get('excerpt_es_editor')) tinymce.get('excerpt_es_editor').setContent(data.translations?.es?.excerpt || '');
-        if (tinymce.get('content_en_editor')) tinymce.get('content_en_editor').setContent(data.translations?.en?.content || '');
-        if (tinymce.get('excerpt_en_editor')) tinymce.get('excerpt_en_editor').setContent(data.translations?.en?.excerpt || '');
-    }, 500); // Pequeña demora para asegurar que el editor está listo
-    
-    // --- Lógica para mostrar/ocultar y manipular la imagen de portada ---
-    const imageDisplayArea = form.querySelector('#current-cover-image-display-area');
-    let imgElement = imageDisplayArea.querySelector('.current-cover-image');
-    const clearImageOptionLabel = form.querySelector('#clear-image-option');
-    const clearCheckbox = clearImageOptionLabel ? clearImageOptionLabel.querySelector('[name="coverImage_clear_flag"]') : null;
+      if (tinymce.get("content_es_editor"))
+        tinymce
+          .get("content_es_editor")
+          .setContent(data.translations?.es?.content || "");
+      if (tinymce.get("excerpt_es_editor"))
+        tinymce
+          .get("excerpt_es_editor")
+          .setContent(data.translations?.es?.excerpt || "");
+      if (tinymce.get("content_en_editor"))
+        tinymce
+          .get("content_en_editor")
+          .setContent(data.translations?.en?.content || "");
+      if (tinymce.get("excerpt_en_editor"))
+        tinymce
+          .get("excerpt_en_editor")
+          .setContent(data.translations?.en?.excerpt || "");
+    }, 500);
 
+    const imageDisplayArea = form.querySelector(
+      "#current-cover-image-display-area",
+    );
+    let imgElement = imageDisplayArea.querySelector(".current-cover-image");
+    const clearImageOptionLabel = form.querySelector("#clear-image-option");
+    const clearCheckbox = clearImageOptionLabel
+      ? clearImageOptionLabel.querySelector('[name="coverImage_clear_flag"]')
+      : null;
     if (data.coverImage) {
-        if (!imgElement) {
-            imgElement = document.createElement('img');
-            imgElement.className = 'current-cover-image';
-            imgElement.style.maxWidth = '150px';
-            imgElement.style.marginTop = '10px';
-            imageDisplayArea.appendChild(imgElement);
-        }
-        imgElement.src = data.coverImage;
-        imgElement.style.display = 'block';
-
-        if (clearImageOptionLabel) clearImageOptionLabel.style.display = 'block';
-        if (clearCheckbox) clearCheckbox.checked = false;
+      if (!imgElement) {
+        imgElement = document.createElement("img");
+        imgElement.className = "current-cover-image";
+        imgElement.style.maxWidth = "150px";
+        imgElement.style.marginTop = "10px";
+        imageDisplayArea.appendChild(imgElement);
+      }
+      imgElement.src = data.coverImage;
+      imgElement.style.display = "block";
+      if (clearImageOptionLabel) clearImageOptionLabel.style.display = "block";
+      if (clearCheckbox) clearCheckbox.checked = false;
     } else {
-        if (imgElement) {
-            imgElement.src = '';
-            imgElement.style.display = 'none';
-        }
-        if (clearImageOptionLabel) clearImageOptionLabel.style.display = 'none';
-        if (clearCheckbox) clearCheckbox.checked = false;
+      if (imgElement) {
+        imgElement.src = "";
+        imgElement.style.display = "none";
+      }
+      if (clearImageOptionLabel) clearImageOptionLabel.style.display = "none";
+      if (clearCheckbox) clearCheckbox.checked = false;
     }
   }
 
-
   // --- Event Listener para el envío del formulario ---
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     const user = auth.currentUser;
     if (!user) {
-      alert('Debes iniciar sesión para realizar esta operación.');
-      window.location.href = '/admin/login';
+      alert("Debes iniciar sesión para realizar esta operación.");
+      window.location.href = "/admin/login";
       return;
     }
 
     const idToken = await user.getIdToken();
-
     const formData = new FormData(form);
 
-    // --- OBTENER CONTENIDO DE TinyMCE y añadirlo a formData ---
-    // TinyMCE no actualiza automáticamente el textarea, hay que extraer su contenido.
-    // Usamos tinymce.get() para asegurar que obtenemos la instancia correcta del editor.
-    formData.set('content_es', tinymce.get('content_es_editor') ? tinymce.get('content_es_editor').getContent() : form.querySelector('[name="content_es"]').value);
-    formData.set('excerpt_es', tinymce.get('excerpt_es_editor') ? tinymce.get('excerpt_es_editor').getContent() : form.querySelector('[name="excerpt_es"]').value);
-    formData.set('content_en', tinymce.get('content_en_editor') ? tinymce.get('content_en_editor').getContent() : form.querySelector('[name="content_en"]').value);
-    formData.set('excerpt_en', tinymce.get('excerpt_en_editor') ? tinymce.get('excerpt_en_editor').getContent() : form.querySelector('[name="excerpt_en"]').value);
+    formData.set(
+      "content_es",
+      tinymce.get("content_es_editor")
+        ? tinymce.get("content_es_editor").getContent()
+        : form.querySelector('[name="content_es"]').value,
+    );
+    formData.set(
+      "excerpt_es",
+      tinymce.get("excerpt_es_editor")
+        ? tinymce.get("excerpt_es_editor").getContent()
+        : form.querySelector('[name="excerpt_es"]').value,
+    );
+    formData.set(
+      "content_en",
+      tinymce.get("content_en_editor")
+        ? tinymce.get("content_en_editor").getContent()
+        : form.querySelector('[name="content_en"]').value,
+    );
+    formData.set(
+      "excerpt_en",
+      tinymce.get("excerpt_en_editor")
+        ? tinymce.get("excerpt_en_editor").getContent()
+        : form.querySelector('[name="excerpt_en"]').value,
+    );
 
-
-    // Asegurarse de que los campos anidados existan y tengan valores por defecto (ej. string vacío)
-    const postData = {
-        translations: {
-            es: {
-                title: formData.get('title_es') || '',
-                content: formData.get('content_es') || '',
-                excerpt: formData.get('excerpt_es') || '',
-            },
-            en: {
-                title: formData.get('title_en') || '',
-                content: formData.get('content_en') || '',
-                excerpt: formData.get('excerpt_en') || '',
-            },
-        },
-        categories: formData.get('categories')?.split(',').map(cat => cat.trim()).filter(cat => cat) || [],
-        pubDate: formData.get('pubDate') || '',
-        draft: formData.get('draft') === 'on' ? true : false,
-    };
-
-    // Lógica para el campo 'coverImage'
-    const coverImageFile = formData.get('coverImageFile');
-    const clearImageFlag = formData.get('coverImage_clear_flag') === 'true';
-
-    if (coverImageFile && coverImageFile.size > 0) {
-        // Si hay un nuevo archivo, el servidor lo manejará. No incluir 'coverImage' en postData aquí.
-    } else if (clearImageFlag) {
-        postData.coverImage = null; // Si se marcó para borrar
-    }
-    // Si no hay nuevo archivo y NO se marcó para borrar, no incluimos la propiedad
-    // 'coverImage' en postData. updateDoc no tocará los campos no presentes.
-
-
-    const method = postId ? 'PUT' : 'POST';
-    const url = postId ? `/api/blog/${postId}` : '/api/blog';
+    const method = currentPostId ? "PUT" : "POST";
+    const url = currentPostId ? `/api/blog/${currentPostId}` : "/api/blog";
 
     try {
       const response = await fetch(url, {
         method: method,
-        body: formData, // FormData maneja archivos y campos de texto
+        body: formData,
         headers: {
-          'Authorization': `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
       });
-
       const result = await response.json();
-
       if (response.ok) {
-        alert('Operación exitosa!');
-        window.location.href = '/admin/posts';
+        alert("Operación exitosa!");
+        window.location.href = "/admin/posts";
       } else {
-        alert('Error en la operación: ' + result.error);
-        console.error('Error del servidor:', result.error);
+        alert("Error en la operación: " + result.error);
       }
     } catch (error) {
-      console.error("Error al enviar el formulario (red o desconocido):", error);
-      alert('Error de red o desconocido: ' + error.message);
+      alert("Error de red o desconocido: " + error.message);
     }
   });
 
-
-  // --- Event Listener para cuando la autenticación cambia (y al cargar la página) ---
+  // --- Event Listener para cuando la autenticación cambia ---
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      if (postId) {
-        user.getIdToken().then(idToken => {
-          loadPostDataForEdit(postId, idToken);
+      if (currentPostId) {
+        user.getIdToken().then((idToken) => {
+          loadPostDataForEdit(currentPostId, idToken);
         });
       }
     } else {
-      alert('No autenticado. Por favor, inicia sesión.');
-      window.location.href = '/admin/login';
+      alert("No autenticado. Por favor, inicia sesión.");
+      window.location.href = "/admin/login";
     }
   });
-
 </script>
 
 <style>
-  /* Estilos básicos para el formulario */
   form {
     max-width: 800px;
     margin: 20px auto;
@@ -321,7 +334,7 @@ let postToEdit = null;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
   h2 {
     text-align: center;
@@ -348,7 +361,7 @@ let postToEdit = null;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 16px;
-    box-sizing: border-box; /* Incluye padding y border en el width */
+    box-sizing: border-box;
   }
   input[type="file"] {
     margin-top: 5px;
@@ -371,7 +384,7 @@ let postToEdit = null;
   button[type="submit"]:hover {
     background-color: #0056b3;
   }
-  img {
+  img.current-cover-image {
     display: block;
     margin-top: 10px;
     border: 1px solid #eee;

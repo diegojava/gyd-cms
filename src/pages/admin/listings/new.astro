@@ -1,17 +1,27 @@
 ---
 import BlogPostForm from "../../components/BlogPostForm.astro";
 
+// 1. Preparamos la config en la PÁGINA
+const firebaseConfig = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
 ---
+
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Nuevo Post</title>
-    <style> /* Estilos básicos para la página, o importar CSS global */ </style>
-</head>
-<body>
-    <a href="/admin/dashboard">Volver al Dashboard</a>
-    <a href="/admin/posts">Ver Posts</a>
-    <BlogPostForm />
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Crear Nuevo Post</title>
+        <style>
+            /* Estilos básicos para la página, o importar CSS global */
+        </style>
+    </head>
+    <body>
+        <a href="/admin/dashboard">Volver al Dashboard</a>
+        <a href="/admin/posts">Ver Posts</a>
+        <BlogPostForm firebaseConfig={firebaseConfig} />
+    </body>
 </html>
