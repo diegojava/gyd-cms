@@ -61,7 +61,7 @@ const { postId, firebaseConfig } = Astro.props;
   </label>
 
   <label>
-    <input type="checkbox" name="draft" /> Borrador
+    <input type="checkbox" name="draft" checked={postToEdit?.draft} /> Es Borrador
   </label>
 
   <button type="submit"
