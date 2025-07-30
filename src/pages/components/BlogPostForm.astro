@@ -6,6 +6,7 @@ const { postId, firebaseConfig } = Astro.props;
 // Inicializamos postToEdit como null.
 // Los datos para la edición se cargarán dinámicamente en el cliente.
 let postToEdit = null;
+// Si postId está definido, intentaremos cargar los datos del post para editar.
 ---
 
 <form id="post-form" data-post-id={postId}>
