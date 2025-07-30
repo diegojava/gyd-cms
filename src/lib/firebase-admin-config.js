@@ -3,10 +3,10 @@ import * as admin from 'firebase-admin';
 // --- CREDENCIALES DEL PROYECTO CMS (leídas con los nombres de Vercel) ---
 const serviceAccountCMS = {
   // Usamos la nueva variable que acabas de crear
-  projectId: import.meta.env.FIREBASE_PROJECT_ID,
+  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
   // Usamos los nombres sin el prefijo "CMS_"
-  clientEmail: import.meta.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: import.meta.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  clientEmail: import.meta.env.PUBLIC_FIREBASE_CLIENT_EMAIL,
+  privateKey: import.meta.env.PUBLIC_FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
 };
 
 // --- CREDENCIALES DEL PROYECTO STORAGE (estas ya estaban bien) ---
