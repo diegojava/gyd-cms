@@ -1,6 +1,7 @@
 ---
 // --- LADO DEL SERVIDOR ---
 // Lee las variables de entorno para pasarlas al cliente.
+// Estas variables deben estar definidas en tu archivo .env o en el entorno de despliegue.
 const configParaElCliente = {
     apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
     authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
