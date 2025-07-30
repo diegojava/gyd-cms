@@ -1,144 +1,116 @@
 ---
-// src/pages/admin/login.astro
-// No necesita imports del Admin SDK aquí.
-
+// --- LADO DEL SERVIDOR ---
+// Lee las variables de entorno para pasarlas al cliente.
 const configParaElCliente = {
-    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+  apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
 };
 ---
 
 <!doctype html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Login de Administración</title>
-        <style>
-            body {
-                font-family: sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                background-color: #f0f2f5;
-                margin: 0;
-            }
-            .login-container {
-                background-color: white;
-                padding: 40px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                text-align: center;
-            }
-            button {
-                background-color: #4285f4;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
-                margin-top: 20px;
-                margin-left: auto;
-                margin-right: auto;
-            }
-            button:hover {
-                background-color: #357ae8;
-            }
-            .google-icon {
-                width: 20px;
-                height: 20px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="login-container">
-            <h1>Acceso al Panel de Administración</h1>
-            <button id="google-login-btn">
-                <img
-                    src="/assets/google-icon.png"
-                    alt="Google Icon"
-                    class="google-icon"
-                />
-                Iniciar sesión con Google
-            </button>
-            <p id="login-status"></p>
-        </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login de Administración</title>
+    <style>
+      /* Tus estilos CSS no necesitan cambios */
+      body {
+        font-family: sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f0f2f5;
+        margin: 0;
+      }
+      .login-container {
+        background-color: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      button {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        display: none; /* Oculto por defecto */
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      button:hover {
+        background-color: #357ae8;
+      }
+      .google-icon {
+        width: 20px;
+        height: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h1>Acceso al Panel de Administración</h1>
+      <button id="google-login-btn">
+        <img src="/assets/google-icon.png" alt="Google Icon" class="google-icon"/>
+        Iniciar sesión con Google
+      </button>
+      <p id="login-status">Verificando estado de la sesión...</p>
+    </div>
 
-        <script define:vars={{ firebaseConfig: configParaElCliente }}>
-            // --- LADO DEL CLIENTE ---
-            // La variable "firebaseConfig" ahora existe aquí, pasada desde el servidor.
+    <script define:vars={{ firebaseConfig: configParaElCliente }}>
+      // 1. IMPORTAR TODO LO NECESARIO
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-            import {
-                getAuth,
-                GoogleAuthProvider,
-                signInWithPopup,
-                onAuthStateChanged,
-            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      // 2. INICIALIZAR FIREBASE Y OBTENER REFERENCIAS
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const provider = new GoogleAuthProvider();
+      const loginButton = document.getElementById("google-login-btn");
+      const loginStatus = document.getElementById("login-status");
 
-            // Inicializa Firebase con la configuración que recibimos
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const provider = new GoogleAuthProvider();
+      // 3. MANEJAR EL ESTADO DE AUTENTICACIÓN (CUANDO CARGA LA PÁGINA)
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // Si el usuario ya está logueado, redirigir
+          loginStatus.textContent = `Sesión iniciada como: ${user.displayName}. Redirigiendo...`;
+          window.location.href = "/admin/dashboard";
+        } else {
+          // Si no está logueado, mostrar el botón de login
+          loginStatus.textContent = "Por favor, inicia sesión para continuar.";
+          loginButton.style.display = "flex";
+        }
+      });
 
-            // Tu lógica de login
-            const loginButton = document.getElementById("google-login-btn");
-            loginButton.addEventListener("click", () => {
-                signInWithPopup(auth, provider)
-                    .then((result) => {
-                        // Login exitoso, redirigir al dashboard
-                        console.log("Login exitoso:", result.user);
-                        window.location.href = "/admin/dashboard";
-                    })
-                    .catch((error) => {
-                        console.error("Error en el login:", error);
-                    });
-            });
-        </script>
-
-        <script type="module">
-            import {
-                GoogleAuthProvider,
-                signInWithPopup,
-                onAuthStateChanged,
-            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-            const loginButton = document.getElementById("google-login-btn");
-            const loginStatus = document.getElementById("login-status");
-            const provider = new GoogleAuthProvider();
-
-            // Verificar si el usuario ya está logueado
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    loginStatus.textContent = `Sesión iniciada como: ${user.displayName} (${user.email}). Redirigiendo...`;
-                    window.location.href = "/admin/dashboard";
-                } else {
-                    loginStatus.textContent =
-                        "Por favor, inicia sesión para acceder al CMS de Get Your Depa";
-                    loginButton.style.display = "block";
-                }
-            });
-
-            loginButton.addEventListener("click", async () => {
-                try {
-                    loginButton.disabled = true;
-                    loginStatus.textContent = "Iniciando sesión...";
-                    await signInWithPopup(auth, provider);
-                    // onAuthStateChanged manejará la redirección
-                } catch (error) {
-                    console.error("Error de autenticación con Google:", error);
-                    loginStatus.textContent = `Error al iniciar sesión: ${error.message}`;
-                    loginButton.disabled = false;
-                }
-            });
-        </script>
-    </body>
+      // 4. MANEJAR EL CLIC EN EL BOTÓN DE LOGIN
+      loginButton.addEventListener("click", () => {
+        signInWithPopup(auth, provider)
+          .then((result) => {
+            // El onAuthStateChanged se encargará de la redirección,
+            // pero podemos mostrar un mensaje intermedio.
+            loginStatus.textContent = "¡Login exitoso! Redirigiendo...";
+          })
+          .catch((error) => {
+            console.error("Error en el login:", error);
+            loginStatus.textContent = `Error: ${error.message}`;
+          });
+      });
+    </script>
+  </body>
 </html>
