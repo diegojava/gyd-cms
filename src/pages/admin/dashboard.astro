@@ -112,6 +112,8 @@ const clientSideFirebaseConfig = {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
 
+            window.auth = auth;
+
             // Verificamos si el usuario tiene sesión activa para proteger la ruta
             onAuthStateChanged(auth, (user) => {
                 if (!user) {
