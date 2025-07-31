@@ -1,57 +1,61 @@
 import * as admin from 'firebase-admin';
 
-// --- CREDENCIALES DEL PROYECTO CMS (leídas con los nombres de Vercel) ---
-const serviceAccountCMS = {
-  // Usamos la nueva variable que acabas de crear
-  projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
-  // Usamos los nombres sin el prefijo "CMS_"
-  clientEmail: import.meta.env.PUBLIC_FIREBASE_CLIENT_EMAIL,
-  privateKey: import.meta.env.PUBLIC_FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-};
+// Función para verificar que una variable de entorno exista
+function getRequiredEnv(key) {
+  const value = import.meta.env[key];
+  if (!value) {
+    // Si una variable no existe, el build fallará con este mensaje claro
+    throw new Error(`ERROR FATAL: Falta la variable de entorno requerida '${key}' en la configuración de Vercel.`);
+  }
+  return value;
+}
 
-// --- CREDENCIALES DEL PROYECTO STORAGE (estas ya estaban bien) ---
-const serviceAccountStorage = {
-  projectId: import.meta.env.STORAGE_FIREBASE_PROJECT_ID,
-  clientEmail: import.meta.env.STORAGE_FIREBASE_CLIENT_EMAIL,
-  privateKey: import.meta.env.STORAGE_FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-};
+let serviceAccountCMS = null;
+let serviceAccountStorage = null;
+
+try {
+  // --- CREDENCIALES DEL PROYECTO CMS ---
+  serviceAccountCMS = {
+    projectId: getRequiredEnv('FIREBASE_PROJECT_ID'),
+    clientEmail: getRequiredEnv('FIREBASE_CLIENT_EMAIL'),
+    privateKey: getRequiredEnv('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n'),
+  };
+
+  // --- CREDENCIALES DEL PROYECTO STORAGE ---
+  serviceAccountStorage = {
+    projectId: getRequiredEnv('STORAGE_FIREBASE_PROJECT_ID'),
+    clientEmail: getRequiredEnv('STORAGE_FIREBASE_CLIENT_EMAIL'),
+    privateKey: getRequiredEnv('STORAGE_FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n'),
+  };
+} catch (error) {
+  console.error(error.message);
+}
 
 
 // --- INICIALIZAR LA APP DEL CMS ---
 let appCMS;
-if (!admin.apps.some((app) => app.name === 'appCMS')) {
-  // Verificamos que las credenciales del CMS no estén vacías antes de inicializar
-  if (serviceAccountCMS.projectId && serviceAccountCMS.clientEmail && serviceAccountCMS.privateKey) {
-    appCMS = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountCMS),
-      databaseURL: `https://${serviceAccountCMS.projectId}.firebaseio.com`,
-    }, 'appCMS');
-  } else {
-    console.error("Faltan las credenciales del Admin SDK para CMS.");
-  }
+if (serviceAccountCMS && !admin.apps.some((app) => app.name === 'appCMS')) {
+  appCMS = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccountCMS),
+    databaseURL: `https://${serviceAccountCMS.projectId}.firebaseio.com`,
+  }, 'appCMS');
 } else {
-  appCMS = admin.app('appCMS');
+  appCMS = admin.apps.find(app => app.name === 'appCMS');
 }
 
 // --- INICIALIZAR LA APP DE STORAGE ---
 let appStorage;
-if (!admin.apps.some((app) => app.name === 'appStorage')) {
-  // Verificamos que las credenciales de Storage no estén vacías
-  if (serviceAccountStorage.projectId && serviceAccountStorage.clientEmail && serviceAccountStorage.privateKey) {
-    appStorage = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccountStorage),
-      storageBucket: `${serviceAccountStorage.projectId}.appspot.com`,
-    }, 'appStorage');
-  } else {
-    console.error("Faltan las credenciales del Admin SDK para Storage.");
-  }
+if (serviceAccountStorage && !admin.apps.some((app) => app.name === 'appStorage')) {
+  appStorage = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccountStorage),
+    storageBucket: `${serviceAccountStorage.projectId}.appspot.com`,
+  }, 'appStorage');
 } else {
-  appStorage = admin.app('appStorage');
+  appStorage = admin.apps.find(app => app.name === 'appStorage');
 }
 
 
 // --- Exportar las instancias de los servicios ---
-// Añadimos una comprobación para no exportar instancias que no se pudieron crear
 export const adminDb = appCMS ? appCMS.firestore() : null;
 export const adminAuth = appCMS ? appCMS.auth() : null;
 export const adminStorage = appStorage ? appStorage.storage() : null;
