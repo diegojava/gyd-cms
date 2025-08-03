@@ -1,9 +1,8 @@
 ---
 // src/pages/admin/dashboard.astro
-import Nav from "../components/utils/Nav.astro"; // Ruta corregida
+import Nav from "../../components/utils/Nav.astro";
 import "/src/styles/global.css";
 
-// 1. Preparamos la configuración de Firebase para pasarla al cliente
 const clientSideFirebaseConfig = {
     apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
     authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -17,32 +16,34 @@ const clientSideFirebaseConfig = {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Dashboard Admin</title>
+        <style>
+            /* Ocultamos el contenido principal por defecto */
+            #main-content {
+                display: none;
+            }
+        </style>
     </head>
     <body>
         <Nav currentPage="dashboard" />
 
-        <section class="p-4 mt-32 md:p-8">
+        <div id="loading-container" class="p-8 text-center">
+            <p class="text-xl">Verificando sesión...</p>
+        </div>
+
+        <main id="main-content" class="p-8">
             <h1 class="text-3xl font-bold mb-8">
                 Bienvenido al Dashboard de Administración
             </h1>
 
             <div
-                class="grid border border-gray-200 rounded-lg shadow-sm dark:border-gray-700 md:grid-cols-2 bg-white dark:bg-gray-800"
+                class="grid border border-gray-200 rounded-lg shadow-sm md:grid-cols-2 bg-white"
             >
                 <figure
-                    class="flex flex-col items-center justify-center p-8 text-center bg-white border-b border-gray-200 rounded-t-lg md:rounded-t-none md:rounded-ss-lg md:border-e dark:bg-gray-800 dark:border-gray-700"
+                    class="flex flex-col items-center justify-center p-8 text-center border-b md:border-r"
                 >
-                    <blockquote
-                        class="max-w-2xl mx-auto mb-4 text-gray-500 lg:mb-8 dark:text-gray-400"
-                    >
-                        <h3
-                            class="text-lg font-semibold text-gray-900 dark:text-white"
-                        >
-                            Publicaciones
-                        </h3>
-                        <p class="my-4">
-                            Gestiona las entradas del blog de Get Your Depa.
-                        </p>
+                    <blockquote class="max-w-2xl mx-auto">
+                        <h3 class="text-lg font-semibold">Publicaciones</h3>
+                        <p class="my-4">Gestiona las entradas del blog.</p>
                         <a
                             href="/admin/posts"
                             class="text-blue-600 hover:underline"
@@ -52,19 +53,11 @@ const clientSideFirebaseConfig = {
                 </figure>
 
                 <figure
-                    class="flex flex-col items-center justify-center p-8 text-center bg-white border-b border-gray-200 md:rounded-se-lg dark:bg-gray-800 dark:border-gray-700"
+                    class="flex flex-col items-center justify-center p-8 text-center border-b"
                 >
-                    <blockquote
-                        class="max-w-2xl mx-auto mb-4 text-gray-500 lg:mb-8 dark:text-gray-400"
-                    >
-                        <h3
-                            class="text-lg font-semibold text-gray-900 dark:text-white"
-                        >
-                            Zonas
-                        </h3>
-                        <p class="my-4">
-                            Administra las zonas que se muestran en el sitio.
-                        </p>
+                    <blockquote class="max-w-2xl mx-auto">
+                        <h3 class="text-lg font-semibold">Zonas</h3>
+                        <p class="my-4">Administra las zonas del sitio.</p>
                         <a
                             href="/admin/zones"
                             class="text-blue-600 hover:underline"
@@ -74,16 +67,10 @@ const clientSideFirebaseConfig = {
                 </figure>
 
                 <figure
-                    class="flex flex-col items-center justify-center p-8 text-center bg-white border-b border-gray-200 md:rounded-es-lg md:border-b-0 md:border-e dark:bg-gray-800 dark:border-gray-700"
+                    class="flex flex-col items-center justify-center p-8 text-center md:border-r"
                 >
-                    <blockquote
-                        class="max-w-2xl mx-auto mb-4 text-gray-500 lg:mb-8 dark:text-gray-400"
-                    >
-                        <h3
-                            class="text-lg font-semibold text-gray-900 dark:text-white"
-                        >
-                            Departamentos
-                        </h3>
+                    <blockquote class="max-w-2xl mx-auto">
+                        <h3 class="text-lg font-semibold">Departamentos</h3>
                         <p class="my-4">
                             Gestiona los listados de departamentos.
                         </p>
@@ -95,7 +82,7 @@ const clientSideFirebaseConfig = {
                     </blockquote>
                 </figure>
             </div>
-        </section>
+        </main>
 
         <script
             type="module"
@@ -105,32 +92,25 @@ const clientSideFirebaseConfig = {
             import {
                 getAuth,
                 onAuthStateChanged,
-                signOut,
             } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-            // Inicializamos Firebase con la config que viene del servidor
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
 
-            window.auth = auth;
+            const loadingContainer =
+                document.getElementById("loading-container");
+            const mainContent = document.getElementById("main-content");
 
-            // Verificamos si el usuario tiene sesión activa para proteger la ruta
             onAuthStateChanged(auth, (user) => {
-                if (!user) {
-                    // Si no hay sesión, lo redirigimos a la página de login
+                if (user) {
+                    // SESIÓN CONFIRMADA: Ocultamos "cargando" y mostramos el dashboard
+                    loadingContainer.style.display = "none";
+                    mainContent.style.display = "block";
+                } else {
+                    // SESIÓN NO VÁLIDA: Redirigimos al login
                     window.location.href = "/admin/login";
                 }
             });
-
-            // La lógica del botón de logout usualmente está en el componente Nav,
-            // pero si está aquí, nos aseguramos de que no de error si no encuentra el botón.
-            try {
-                await signOut(auth);
-                window.location.href = "/admin/login";
-            } catch (error) {
-                console.error("Error al cerrar sesión:", error);
-                alert("Error al cerrar sesión.");
-            }
         </script>
     </body>
 </html>
