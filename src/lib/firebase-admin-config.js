@@ -1,5 +1,5 @@
 // src/lib/firebase-admin-config.js
-import * as admin from 'firebase-admin';
+import * as adminModule from 'firebase-admin';
 const admin = adminModule.default;
 
 let instances = null;
