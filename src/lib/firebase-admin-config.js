@@ -28,22 +28,31 @@ function initializeFirebaseAdmin() {
 
     let appCMS, appStorage;
 
-    if (!admin.apps.some((app) => app.name === 'appCMS')) {
+    // --- MÉTODO DE INICIALIZACIÓN A PRUEBA DE FALLOS ---
+    try {
       appCMS = admin.initializeApp({
         credential: admin.credential.cert(serviceAccountCMS),
         databaseURL: `https://${serviceAccountCMS.projectId}.firebaseio.com`,
       }, 'appCMS');
-    } else {
-      appCMS = admin.app('appCMS');
+    } catch (error) {
+      if (error.code === 'app/duplicate-app') {
+        appCMS = admin.app('appCMS');
+      } else {
+        throw error;
+      }
     }
 
-    if (!admin.apps.some((app) => app.name === 'appStorage')) {
+    try {
       appStorage = admin.initializeApp({
         credential: admin.credential.cert(serviceAccountStorage),
         storageBucket: `${serviceAccountStorage.projectId}.appspot.com`,
       }, 'appStorage');
-    } else {
-      appStorage = admin.app('appStorage');
+    } catch (error) {
+      if (error.code === 'app/duplicate-app') {
+        appStorage = admin.app('appStorage');
+      } else {
+        throw error;
+      }
     }
 
     instances = {
@@ -60,6 +69,7 @@ function initializeFirebaseAdmin() {
 
 // Exportamos una única función que se encarga de todo
 export function getFirebaseAdmin() {
+  // Inicializamos solo una vez
   if (!instances) {
     initializeFirebaseAdmin();
   }
