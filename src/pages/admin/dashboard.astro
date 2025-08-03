@@ -124,17 +124,12 @@ const clientSideFirebaseConfig = {
 
             // La lógica del botón de logout usualmente está en el componente Nav,
             // pero si está aquí, nos aseguramos de que no de error si no encuentra el botón.
-            const logoutButton = document.getElementById("logout-btn");
-            if (logoutButton) {
-                logoutButton.addEventListener("click", async () => {
-                    try {
-                        await signOut(auth);
-                        window.location.href = "/admin/login";
-                    } catch (error) {
-                        console.error("Error al cerrar sesión:", error);
-                        alert("Error al cerrar sesión.");
-                    }
-                });
+            try {
+                await signOut(auth);
+                window.location.href = "/admin/login";
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+                alert("Error al cerrar sesión.");
             }
         </script>
     </body>
