@@ -4,62 +4,26 @@ const admin = adminModule.default;
 
 let instances = null;
 
-// Función para obtener las variables de forma segura
-function getRequiredEnv(key) {
-  const value = import.meta.env[key];
-  if (!value) {
-    throw new Error(`ERROR FATAL: Falta la variable de entorno '${key}' en Vercel.`);
-  }
-  return value;
-}
-
 function initializeFirebaseAdmin() {
   try {
-    const serviceAccountCMS = {
-      projectId: getRequiredEnv('FIREBASE_PROJECT_ID'),
-      clientEmail: getRequiredEnv('FIREBASE_CLIENT_EMAIL'),
-      privateKey: getRequiredEnv('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n'),
+    const serviceAccount = {
+      projectId: import.meta.env.FIREBASE_PROJECT_ID,
+      clientEmail: import.meta.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: import.meta.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
     };
 
-    const serviceAccountStorage = {
-      projectId: getRequiredEnv('STORAGE_FIREBASE_PROJECT_ID'),
-      clientEmail: getRequiredEnv('STORAGE_FIREBASE_CLIENT_EMAIL'),
-      privateKey: getRequiredEnv('STORAGE_FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n'),
-    };
-
-    let appCMS, appStorage;
-
-    // --- MÉTODO DE INICIALIZACIÓN A PRUEBA DE FALLOS ---
-    try {
-      appCMS = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountCMS),
-        databaseURL: `https://${serviceAccountCMS.projectId}.firebaseio.com`,
-      }, 'appCMS');
-    } catch (error) {
-      if (error.code === 'app/duplicate-app') {
-        appCMS = admin.app('appCMS');
-      } else {
-        throw error;
-      }
-    }
-
-    try {
-      appStorage = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountStorage),
-        storageBucket: `${serviceAccountStorage.projectId}.appspot.com`,
-      }, 'appStorage');
-    } catch (error) {
-      if (error.code === 'app/duplicate-app') {
-        appStorage = admin.app('appStorage');
-      } else {
-        throw error;
-      }
+    // Inicializamos una sola app con todos los servicios que necesita
+    if (admin.apps.length === 0) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: `${serviceAccount.projectId}.appspot.com`,
+      });
     }
 
     instances = {
-      adminDb: appCMS.firestore(),
-      adminAuth: appCMS.auth(),
-      adminStorage: appStorage.storage(),
+      adminDb: admin.firestore(),
+      adminAuth: admin.auth(),
+      adminStorage: admin.storage(),
     };
 
   } catch (error) {
@@ -68,9 +32,8 @@ function initializeFirebaseAdmin() {
   }
 }
 
-// Exportamos una única función que se encarga de todo
+// Exportamos la función que se encarga de todo
 export function getFirebaseAdmin() {
-  // Inicializamos solo una vez
   if (!instances) {
     initializeFirebaseAdmin();
   }
