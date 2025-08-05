@@ -1,6 +1,6 @@
 ---
 // src/components/ListingsPostForm.astro
-const { postId, firebaseConfig } = Astro.props;
+const { postId, firebaseConfig, zones } = Astro.props;
 ---
 
 <form id="listing-form" data-post-id={postId}>
@@ -70,6 +70,18 @@ const { postId, firebaseConfig } = Astro.props;
         name="address"
         placeholder="Ej: Av. Presidente Masaryk, Polanco, CDMX"
       />
+    </label>
+    <label>
+      Zona / Colonia:
+      <select name="zoneId">
+        <option value="">-- Selecciona una zona --</option>
+        {
+          zones &&
+            zones.map((zone) => (
+              <option value={zone.id}>{zone.translations.es.title}</option>
+            ))
+        }
+      </select>
     </label>
   </fieldset>
 
@@ -173,6 +185,7 @@ const { postId, firebaseConfig } = Astro.props;
       data.propertyType || "departamento";
     form.querySelector('[name="status"]').value = data.status || "venta";
     form.querySelector('[name="address"]').value = data.address || "";
+    form.querySelector('[name="zoneId"]').value = data.zoneId || "";
     form.querySelector('[name="title_es"]').value =
       data.translations?.es?.title || "";
     form.querySelector('[name="description_es"]').value =
