@@ -21,7 +21,6 @@ const clientSideFirebaseConfig = {
       /* Tus estilos pueden quedar como están */
       body {
         font-family: sans-serif;
-        padding: 20px;
       }
     </style>
   </head>
@@ -61,7 +60,8 @@ const clientSideFirebaseConfig = {
           </thead>
           <tbody id="posts-table-body">
             <tr>
-              <td colspan="5" class="px-6 py-4 text-center">Cargando posts...
+              <td colspan="5" class="px-6 py-4 text-center"
+                >Cargando posts...
               </td>
             </tr>
           </tbody>
@@ -75,7 +75,10 @@ const clientSideFirebaseConfig = {
     >
       // 3. Inicializamos Firebase aquí, en lugar de importar un archivo
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      import {
+        getAuth,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app); // La variable 'auth' ahora existe en este script
@@ -116,11 +119,12 @@ const clientSideFirebaseConfig = {
             const rowElement = document.createElement("tr");
             rowElement.className =
               "bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600";
-            
+
             // Corrección para la fecha: los Timestamps de Firestore vienen como objetos
-            const pubDate = post.pubDate && post.pubDate.seconds
-              ? new Date(post.pubDate.seconds * 1000)
-              : new Date(); // Fecha por defecto si no existe
+            const pubDate =
+              post.pubDate && post.pubDate.seconds
+                ? new Date(post.pubDate.seconds * 1000)
+                : new Date(); // Fecha por defecto si no existe
 
             rowElement.innerHTML = `
                 <td class="p-4">
@@ -148,9 +152,13 @@ const clientSideFirebaseConfig = {
             button.addEventListener("click", async (e) => {
               e.preventDefault();
               const postId = e.target.dataset.id;
-              if (window.confirm(`¿Estás seguro de que quieres borrar el post "${postId}"?`)) {
+              if (
+                window.confirm(
+                  `¿Estás seguro de que quieres borrar el post "${postId}"?`,
+                )
+              ) {
                 try {
-                  const deleteResponse = await fetch(`/api/blog/${postId}`,{
+                  const deleteResponse = await fetch(`/api/blog/${postId}`, {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${idToken}` },
                   });
@@ -178,7 +186,7 @@ const clientSideFirebaseConfig = {
           fetchAndRenderPosts();
         } else {
           postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">Inicia sesión para ver y gestionar posts.</td></tr>`;
-          window.location.href = '/admin/login'; // Redirigir si no hay sesión
+          window.location.href = "/admin/login"; // Redirigir si no hay sesión
         }
       });
     </script>
