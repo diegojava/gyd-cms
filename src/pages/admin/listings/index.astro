@@ -1,271 +1,126 @@
 ---
-// src/pages/admin/posts/index.astro
+// src/pages/admin/listings/index.astro
 import Nav from "../../components/utils/Nav.astro";
-import "/src/styles/global.css"; // Importar estilos globales
+import "/src/styles/global.css";
 
-// Este script se ejecutará en el servidor para obtener los posts inicialmente
-//import { auth } from '/src/lib/firebase-config-client.js'; // Necesario solo si quieres un check en el servidor. Mejor en el cliente.
+// 1. Preparamos la configuración de Firebase para el cliente
+const clientSideFirebaseConfig = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
 ---
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionar Posts</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .post-item { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
-        .post-item img { max-width: 100px; height: auto; margin-right: 15px; vertical-align: middle; }
-        .post-actions button { margin-right: 10px; padding: 5px 10px; cursor: pointer; }
-    </style>
-</head>
-<body>
-   <Nav currentPage="listings" />
 
-            <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 mt-8">Gestionar Posts del Blog</h2>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gestionar Departamentos</title>
+    </head>
+    <body>
+        <Nav currentPage="listings" />
+
+        <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2
+                class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 mt-8"
+            >
+                Gestionar Departamentos
+            </h2>
             <a href="/admin/listings/new" class="inline-block mb-8">
-                <button type="button" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                    Crear Post
+                <button
+                    type="button"
+                    class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                    Crear Departamento
                 </button>
             </a>
 
             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-                <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <table
+                    class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
+                >
+                    <thead
+                        class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+                    >
                         <tr>
-                            <th scope="col" class="px-6 py-3">
-                                <span class="sr-only">Imagen</span>
-                            </th>
                             <th scope="col" class="px-6 py-3"> Título (ES) </th>
-                            <th scope="col" class="px-6 py-3"> Borrador </th>
                             <th scope="col" class="px-6 py-3"> Publicado </th>
                             <th scope="col" class="px-6 py-3"> Acciones </th>
                         </tr>
                     </thead>
-                    <tbody id="posts-table-body"> <tr>
-                            <td colspan="5" class="px-6 py-4 text-center">Cargando posts...</td>
+                    <tbody id="listings-table-body">
+                        <tr>
+                            <td colspan="3" class="px-6 py-4 text-center"
+                                >Cargando departamentos...</td
+                            >
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <script type="module">
-            import { auth } from "/firebase-config-client.js"; // Para obtener el token
-            import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"; // Asegúrate de que esta URL CDN sea la versión que estás usando.
+        <script
+            type="module"
+            define:vars={{ firebaseConfig: clientSideFirebaseConfig }}
+        >
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+            import {
+                getAuth,
+                onAuthStateChanged,
+            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-            // Apuntamos al tbody de la tabla
-            const postsTableBody = document.getElementById("posts-table-body");
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const tableBody = document.getElementById("listings-table-body");
 
-            async function fetchAndRenderPosts() {
-                postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">Cargando posts...</td></tr>`;
-                const user = auth.currentUser;
-
-                if (!user) {
-                    postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">Debes iniciar sesión para ver los posts.</td></tr>`;
-                    // Opcional: redirigir a login si no hay user
-                    // window.location.href = '/admin/login';
-                    return;
-                }
-                const idToken = await user.getIdToken();
-
-                try {
-                    const response = await fetch("/api/listings", {
-                        headers: { Authorization: `Bearer ${idToken}` },
-                    });
-                    const posts = await response.json();
-
-                    if (!response.ok) {
-                        postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">Error al cargar posts: ${posts.error}</td></tr>`;
-                        console.error("Error API:", posts.error);
-                        return;
-                    }
-
-                    if (posts.length === 0) {
-                        postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">No hay posts creados.</td></tr>`;
-                        return;
-                    }
-
-                    postsTableBody.innerHTML = ""; // Limpiar el mensaje de carga
-                    posts.forEach((post) => {
-                        const rowElement = document.createElement("tr"); // Creamos una fila (tr)
-                        rowElement.className = "bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600";
-                        rowElement.innerHTML = `
-                            <td class="p-4">
-                                ${post.coverImage ? `<img src="${post.coverImage}" alt="Portada" class="w-16 h-16 object-cover rounded-md" />` : `<div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-gray-500">No img</div>`}
-                            </td>
-                            <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-                                ${post.translations.es.title || 'Sin Título'}
-                                <div class="text-sm font-normal text-gray-500">${post.id}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                ${post.draft ? '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">Borrador</span>' : '<span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Publicado</span>'}
-                            </td>
-                            <td class="px-6 py-4">
-                                ${new Date(post.pubDate).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </td>
-                            <td class="px-6 py-4">
-                                <a href="/admin/posts/${post.id}/edit" class="font-medium text-blue-600 dark:text-blue-500 hover:underline me-3">Editar</a>
-                                <a href="#" data-id="${post.id}" class="delete-btn font-medium text-red-600 dark:text-red-500 hover:underline">Borrar</a>
-                            </td>
-                        `;
-                        postsTableBody.appendChild(rowElement);
-                    });
-
-                    // Añadir event listeners a los botones de borrar
-                    document.querySelectorAll(".delete-btn").forEach((button) => {
-                        button.addEventListener("click", async (e) => {
-                            const postId = e.target.dataset.id;
-                            if (
-                                window.confirm(
-                                    `¿Estás seguro de que quieres borrar el post "${postId}"?`,
-                                )
-                            ) {
-                                try {
-                                    const deleteResponse = await fetch(
-                                        `/api/listings/${postId}`,
-                                        {
-                                            method: "DELETE",
-                                            headers: {
-                                                Authorization: `Bearer ${idToken}`,
-                                            },
-                                        },
-                                    );
-                                    const deleteResult =
-                                        await deleteResponse.json();
-                                    if (deleteResponse.ok) {
-                                        alert("Post borrado exitosamente!");
-                                        fetchAndRenderPosts(); // Recargar la lista
-                                    } else {
-                                        alert(
-                                            "Error al borrar post: " +
-                                                deleteResult.error,
-                                        );
-                                    }
-                                } catch (error) {
-                                    console.error(
-                                        "Error al borrar:",
-                                        error,
-                                    );
-                                    alert(
-                                        "Error de red al borrar el post.",
-                                    );
-                                }
-                            }
-                        });
-                    });
-                } catch (error) {
-                    console.error("Error al obtener posts:", error);
-                    postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">Error al cargar los posts.</td></tr>`;
-                }
-            }
-
-            // Llamar a fetchAndRenderPosts solo después de que el usuario esté autenticado
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    fetchAndRenderPosts();
+                    try {
+                        const idToken = await user.getIdToken();
+                        const response = await fetch("/api/listings", {
+                            // <-- Llama a la API de listings
+                            headers: { Authorization: `Bearer ${idToken}` },
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(
+                                "La respuesta del servidor no fue OK",
+                            );
+                        }
+                        const listings = await response.json();
+
+                        tableBody.innerHTML = "";
+                        if (listings.length === 0) {
+                            tableBody.innerHTML =
+                                '<tr><td colspan="3" class="px-6 py-4 text-center">No hay departamentos creados.</td></tr>';
+                        } else {
+                            listings.forEach((listing) => {
+                                const row = document.createElement("tr");
+                                row.className =
+                                    "bg-white border-b dark:bg-gray-800 dark:border-gray-700";
+                                const pubDate = new Date(
+                                    listing.pubDate,
+                                ).toLocaleDateString("es-ES");
+                                row.innerHTML = `
+                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${listing.translations?.es?.title || "Sin título"}</td>
+                                <td class="px-6 py-4">${pubDate}</td>
+                                <td class="px-6 py-4">
+                                    <a href="/admin/listings/edit/${listing.id}" class="font-medium text-blue-600 hover:underline">Editar</a>
+                                </td>
+                            `;
+                                tableBody.appendChild(row);
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error al cargar listings:", error);
+                        tableBody.innerHTML =
+                            '<tr><td colspan="3" class="px-6 py-4 text-center">Error al cargar los departamentos.</td></tr>';
+                    }
                 } else {
-                    postsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center">Inicia sesión para ver y gestionar posts.</td></tr>`;
-                    // Opcional: redirigir a login si no hay user
-                    // window.location.href = '/admin/login';
+                    window.location.href = "/admin/login";
                 }
             });
         </script>
-
-    <!-- <div id="posts-list">
-        <p>Cargando posts...</p>
-    </div>
-
-    <script type="module">
-        import { auth } from '/src/lib/firebase-config-client'; // Para obtener el token
-        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js';
-
-        const postsListDiv = document.getElementById('posts-list');
-
-        async function fetchAndRenderPosts() {
-            postsListDiv.innerHTML = '<p>Cargando posts...</p>';
-            const user = auth.currentUser;
-            if (!user) {
-                postsListDiv.innerHTML = '<p>Debes iniciar sesión para ver los posts.</p>';
-                return;
-            }
-            const idToken = await user.getIdToken();
-
-            try {
-                const response = await fetch('/api/listings', {
-                    headers: { 'Authorization': `Bearer ${idToken}` }
-                });
-                const posts = await response.json();
-                
-                if (!response.ok) {
-                    postsListDiv.innerHTML = `<p>Error al cargar posts: ${posts.error}</p>`;
-                    console.error('Error API:', posts.error);
-                    return;
-                }
-
-                if (posts.length === 0) {
-                    postsListDiv.innerHTML = '<p>No hay posts creados.</p>';
-                    return;
-                }
-
-                postsListDiv.innerHTML = ''; // Limpiar el mensaje de carga
-                posts.forEach(post => {
-                    const postElement = document.createElement('div');
-                    postElement.className = 'post-item';
-                    postElement.innerHTML = `
-                        <h3>${post.translations.es.title} (${post.id}) ${post.draft ? '(Borrador)' : ''}</h3>
-                        ${post.coverImage ? `<img src="${post.coverImage}" alt="Portada" />` : ''}
-                        <p>${post.translations.es.excerpt || ''}</p>
-                        <p>Publicado: ${new Date(post.pubDate).toLocaleDateString()}</p>
-                        <div class="post-actions">
-                            <a href="/admin/posts/${post.id}/edit"><button>Editar</button></a>
-                            <button data-id="${post.id}" class="delete-btn">Borrar</button>
-                        </div>
-                    `;
-                    postsListDiv.appendChild(postElement);
-                });
-
-                // Añadir event listeners a los botones de borrar
-                document.querySelectorAll('.delete-btn').forEach(button => {
-                    button.addEventListener('click', async (e) => {
-                        const postId = e.target.dataset.id;
-                        if (window.confirm(`¿Estás seguro de que quieres borrar el post "${postId}"?`)) {
-                            try {
-                                const deleteResponse = await fetch(`/api/listings/${postId}`, {
-                                    method: 'DELETE',
-                                    headers: { 'Authorization': `Bearer ${idToken}` }
-                                });
-                                const deleteResult = await deleteResponse.json();
-                                if (deleteResponse.ok) {
-                                    alert('Post borrado exitosamente!');
-                                    fetchAndRenderPosts(); // Recargar la lista
-                                } else {
-                                    alert('Error al borrar post: ' + deleteResult.error);
-                                }
-                            } catch (error) {
-                                console.error('Error al borrar:', error);
-                                alert('Error de red al borrar el post.');
-                            }
-                        }
-                    });
-                });
-
-            } catch (error) {
-                console.error("Error al obtener posts:", error);
-                postsListDiv.innerHTML = '<p>Error al cargar los posts.</p>';
-            }
-        }
-
-        // Llamar a fetchAndRenderPosts solo después de que el usuario esté autenticado
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                fetchAndRenderPosts();
-            } else {
-                postsListDiv.innerHTML = '<p>Inicia sesión para ver y gestionar posts.</p>';
-                // Opcional: redirigir a login si no hay user
-                // window.location.href = '/admin/login';
-            }
-        });
-    </script> -->
-</body>
+    </body>
 </html>
