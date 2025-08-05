@@ -16,7 +16,7 @@ function initializeFirebaseAdmin() {
     if (admin.apps.length === 0) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        storageBucket: `${serviceAccount.projectId}.appspot.com`,
+        storageBucket: serviceAccount.projectId,
       });
     }
 
