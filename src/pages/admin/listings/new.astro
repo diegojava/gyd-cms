@@ -1,5 +1,7 @@
 ---
 import BlogPostForm from "../../components/BlogPostForm.astro";
+import Nav from "../../components/utils/Nav.astro";
+import "/src/styles/global.css"; // Importar estilos globales
 
 // 1. Preparamos la config en la PÁGINA
 const firebaseConfig = {
@@ -20,8 +22,8 @@ const firebaseConfig = {
         </style>
     </head>
     <body>
-        <a href="/admin/dashboard">Volver al Dashboard</a>
-        <a href="/admin/posts">Ver Posts</a>
+        <Nav currentPage="posts" />
+
         <BlogPostForm firebaseConfig={firebaseConfig} />
     </body>
 </html>
