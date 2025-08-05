@@ -1,76 +1,154 @@
 ---
 // src/components/ListingsPostForm.astro
-
-// 1. Recibimos la configuración y el ID como props.
-// Se elimina el fetch que se ejecutaba en el servidor.
 const { postId, firebaseConfig } = Astro.props;
 ---
 
-<form id="post-form" data-post-id={postId}>
-  <h2>{postId ? "Editar Listing" : "Crear Nuevo Listing"}</h2>
+<form id="listing-form" data-post-id={postId}>
+  <h2>{postId ? "Editar Departamento" : "Crear Nuevo Departamento"}</h2>
 
-  <h3>Traducciones (Español)</h3>
-  <label>
-    Título (ES):
-    <input type="text" name="title_es" required />
-  </label>
-  <label>
-    Contenido (ES):
-    <textarea name="content_es" rows="10" required></textarea>
-  </label>
-  <label>
-    Resumen (ES):
-    <textarea name="excerpt_es" rows="3"></textarea>
-  </label>
-
-  <h3>Traducciones (Inglés)</h3>
-  <label>
-    Título (EN):
-    <input type="text" name="title_en" />
-  </label>
-  <label>
-    Contenido (EN):
-    <textarea name="content_en" rows="10"></textarea>
-  </label>
-  <label>
-    Resumen (EN):
-    <textarea name="excerpt_en" rows="3"></textarea>
-  </label>
-
-  <label>
-    Categorías (separadas por comas):
-    <input type="text" name="categories" />
-  </label>
-
-  <label>
-    Imagen de Portada:
-    <input type="file" name="coverImageFile" id="coverImageFileInput" />
-    <div id="current-cover-image-display-area"></div>
-    <label
-      id="clear-image-option"
-      style="display: block; margin-top: 10px; display: none;"
-    >
-      <input type="checkbox" name="coverImage_clear_flag" value="true" />
-      Eliminar imagen actual
+  <fieldset class="form-section">
+    <legend>Detalles de la Propiedad</legend>
+    <div class="grid-2">
+      <label>
+        Precio:
+        <input
+          type="number"
+          name="price"
+          min="0"
+          placeholder="Ej: 3500000"
+          required
+        />
+      </label>
+      <label>
+        Moneda:
+        <select name="currency">
+          <option value="MXN">MXN</option>
+          <option value="USD">USD</option>
+        </select>
+      </label>
+    </div>
+    <div class="grid-3">
+      <label>
+        Área (m²):
+        <input type="number" name="area" min="0" placeholder="Ej: 85" />
+      </label>
+      <label>
+        Habitaciones:
+        <input type="number" name="bedrooms" min="0" value="2" />
+      </label>
+      <label>
+        Baños:
+        <input type="number" name="bathrooms" min="0" value="1" />
+      </label>
+    </div>
+    <div class="grid-3">
+      <label>
+        Estacionamiento:
+        <input type="number" name="parking" min="0" value="1" />
+      </label>
+      <label>
+        Tipo de Propiedad:
+        <select name="propertyType">
+          <option value="departamento">Departamento</option>
+          <option value="casa">Casa</option>
+          <option value="loft">Loft</option>
+          <option value="penthouse">Penthouse</option>
+        </select>
+      </label>
+      <label>
+        Estatus:
+        <select name="status">
+          <option value="venta">En Venta</option>
+          <option value="renta">En Renta</option>
+        </select>
+      </label>
+    </div>
+    <label>
+      Dirección:
+      <input
+        type="text"
+        name="address"
+        placeholder="Ej: Av. Presidente Masaryk, Polanco, CDMX"
+      />
     </label>
-  </label>
+  </fieldset>
 
-  <label>
-    Fecha de Publicación:
-    <input type="date" name="pubDate" />
-  </label>
+  <fieldset class="form-section">
+    <legend>Descripciones (Multi-idioma)</legend>
+    <h3>Español</h3>
+    <label>Título (ES):<input type="text" name="title_es" required /></label>
+    <label
+      >Descripción (ES):<textarea name="description_es" rows="10"
+      ></textarea></label
+    >
 
-  <label>
-    <input type="checkbox" name="draft" checked={postToEdit?.draft} /> Es Borrador
-  </label>
+    <h3>Inglés</h3>
+    <label>Título (EN):<input type="text" name="title_en" /></label>
+    <label
+      >Descripción (EN):<textarea name="description_en" rows="10"
+      ></textarea></label
+    >
+  </fieldset>
+
+  <fieldset class="form-section">
+    <legend>Amenidades</legend>
+    <div class="amenities-grid">
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="gym" /> Gimnasio</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="pool" /> Alberca</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="security_24h" /> Seguridad
+        24/7</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="elevator" /> Elevador</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="balcony" /> Balcón / Terraza</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="furnished" /> Amueblado</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="pets_allowed" /> Acepta Mascotas</label
+      >
+      <label class="amenity-label"
+        ><input type="checkbox" name="amenities" value="rooftop" /> Roof Garden</label
+      >
+    </div>
+  </fieldset>
+
+  <fieldset class="form-section">
+    <legend>Publicación</legend>
+    <label>
+      Imagen de Portada:
+      <input type="file" name="coverImageFile" id="coverImageFileInput" />
+      <div id="current-cover-image-display-area"></div>
+      <label id="clear-image-option" style="display: none; margin-top: 10px;">
+        <input type="checkbox" name="coverImage_clear_flag" value="true" /> Eliminar
+        imagen actual
+      </label>
+    </label>
+    <div class="grid-2">
+      <label>
+        Fecha de Publicación:
+        <input type="date" name="pubDate" />
+      </label>
+      <label class="draft-label">
+        <input type="checkbox" name="draft" /> Es Borrador
+      </label>
+    </div>
+  </fieldset>
 
   <button type="submit"
-    >{postId ? "Actualizar Listing" : "Crear Listing"}</button
+    >{postId ? "Actualizar Departamento" : "Crear Departamento"}</button
   >
 </form>
 
 <script type="module" define:vars={{ firebaseConfig }}>
-  // 3. Inicializamos Firebase aquí, igual que en los otros componentes
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getAuth,
@@ -79,56 +157,51 @@ const { postId, firebaseConfig } = Astro.props;
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-
-  const form = document.getElementById("post-form");
+  const form = document.getElementById("listing-form");
   const currentPostId = form.dataset.postId;
-
-  // --- Lógica para cargar y rellenar datos si estamos editando ---
-  async function loadPostDataForEdit(id, token) {
-    try {
-      // NOTA: Asegúrate que la ruta a tu API sea la correcta para "listings"
-      const response = await fetch(`/api/listings/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        populateForm(data);
-      } else {
-        alert(`Error al cargar el listing para editar: ${data.error}`);
-      }
-    } catch (error) {
-      alert(`Error de red al cargar el listing: ${error.message}`);
-    }
-  }
 
   function populateForm(data) {
     if (!data) return;
+    // Poblar campos de texto y numéricos
+    form.querySelector('[name="price"]').value = data.price || "";
+    form.querySelector('[name="currency"]').value = data.currency || "MXN";
+    form.querySelector('[name="area"]').value = data.area || "";
+    form.querySelector('[name="bedrooms"]').value = data.bedrooms || "";
+    form.querySelector('[name="bathrooms"]').value = data.bathrooms || "";
+    form.querySelector('[name="parking"]').value = data.parking || "";
+    form.querySelector('[name="propertyType"]').value =
+      data.propertyType || "departamento";
+    form.querySelector('[name="status"]').value = data.status || "venta";
+    form.querySelector('[name="address"]').value = data.address || "";
     form.querySelector('[name="title_es"]').value =
       data.translations?.es?.title || "";
-    form.querySelector('[name="content_es"]').value =
-      data.translations?.es?.content || "";
-    form.querySelector('[name="excerpt_es"]').value =
-      data.translations?.es?.excerpt || "";
+    form.querySelector('[name="description_es"]').value =
+      data.translations?.es?.description || "";
     form.querySelector('[name="title_en"]').value =
       data.translations?.en?.title || "";
-    form.querySelector('[name="content_en"]').value =
-      data.translations?.en?.content || "";
-    form.querySelector('[name="excerpt_en"]').value =
-      data.translations?.en?.excerpt || "";
-    form.querySelector('[name="categories"]').value =
-      data.categories?.join(",") || "";
+    form.querySelector('[name="description_en"]').value =
+      data.translations?.en?.description || "";
+    form.querySelector('[name="draft"]').checked = data.draft || false;
 
-    const pubDate =
-      data.pubDate && data.pubDate.seconds
-        ? new Date(data.pubDate.seconds * 1000)
-        : new Date(data.pubDate);
+    // Poblar fecha
+    const pubDate = data.pubDate?.seconds
+      ? new Date(data.pubDate.seconds * 1000)
+      : new Date(data.pubDate);
     form.querySelector('[name="pubDate"]').value = pubDate
       .toISOString()
       .split("T")[0];
 
-    form.querySelector('[name="draft"]').checked = data.draft || false;
+    // Marcar checkboxes de amenidades
+    if (data.amenities && Array.isArray(data.amenities)) {
+      data.amenities.forEach((amenity) => {
+        const checkbox = form.querySelector(
+          `input[name="amenities"][value="${amenity}"]`,
+        );
+        if (checkbox) checkbox.checked = true;
+      });
+    }
 
-    // Lógica para mostrar imagen actual
+    // Mostrar imagen actual
     const imageDisplayArea = form.querySelector(
       "#current-cover-image-display-area",
     );
@@ -138,60 +211,68 @@ const { postId, firebaseConfig } = Astro.props;
     }
   }
 
-  // --- Lógica de envío del formulario ---
+  async function loadListingData(id, token) {
+    try {
+      const response = await fetch(`/api/listings/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (response.ok) populateForm(data);
+      else alert(`Error al cargar: ${data.error}`);
+    } catch (error) {
+      alert(`Error de red: ${error.message}`);
+    }
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const user = auth.currentUser;
     if (!user) {
-      alert("Debes iniciar sesión para realizar esta operación.");
       window.location.href = "/admin/login";
       return;
     }
-
     const idToken = await user.getIdToken();
     const formData = new FormData(form);
 
+    // NOTA: Tu API y tu archivo listings-crud-server.js ahora deben
+    // estar preparados para recibir todos estos nuevos campos.
+    // formData.getAll('amenities') en el servidor te dará un array de las amenidades seleccionadas.
+
     const method = currentPostId ? "PUT" : "POST";
-    // NOTA: Asegúrate que la ruta a tu API sea la correcta para "listings"
     const url = currentPostId
       ? `/api/listings/${currentPostId}`
       : "/api/listings";
 
     try {
       const response = await fetch(url, {
-        method: method,
+        method,
         body: formData,
         headers: { Authorization: `Bearer ${idToken}` },
       });
       const result = await response.json();
       if (response.ok) {
         alert("Operación exitosa!");
-        window.location.href = "/admin/listings"; // Redirigir a la lista de listings
+        window.location.href = "/admin/listings";
       } else {
         alert("Error en la operación: " + result.error);
       }
     } catch (error) {
-      alert("Error de red o desconocido: " + error.message);
+      alert("Error de red: " + error.message);
     }
   });
 
-  // --- Verificación de autenticación al cargar la página ---
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // Si estamos en modo edición, cargar los datos
       if (currentPostId) {
-        user.getIdToken().then((idToken) => {
-          loadPostDataForEdit(currentPostId, idToken);
-        });
+        user
+          .getIdToken()
+          .then((token) => loadListingData(currentPostId, token));
       } else {
-        // Si estamos creando, simplemente asignamos la fecha actual por defecto
         form.querySelector('[name="pubDate"]').value = new Date()
           .toISOString()
           .split("T")[0];
       }
     } else {
-      // Si no hay sesión, redirigir al login
-      alert("No autenticado. Por favor, inicia sesión.");
       window.location.href = "/admin/login";
     }
   });
@@ -201,38 +282,71 @@ const { postId, firebaseConfig } = Astro.props;
   form {
     max-width: 800px;
     margin: 20px auto;
-    padding: 30px;
+    padding: 20px;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
-  h2 {
+  h2,
+  h3 {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-size: 1.2em;
+    margin-top: 25px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+  }
+  .form-section {
+    border: none;
+    padding: 0;
+    margin-bottom: 20px;
   }
   label {
     display: block;
     margin-bottom: 15px;
     font-weight: bold;
-    color: #555;
   }
   input[type="text"],
+  input[type="number"],
   input[type="date"],
-  textarea {
-    width: calc(100% - 22px);
+  textarea,
+  select {
+    width: 100%;
     padding: 10px;
     margin-top: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 16px;
-    box-sizing: border-box; /* Incluye padding y border en el width */
+    box-sizing: border-box;
   }
-  input[type="file"] {
-    margin-top: 5px;
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .amenity-label,
+  .draft-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
   }
   input[type="checkbox"] {
-    margin-right: 10px;
+    width: auto;
+    margin-top: 0;
   }
   button[type="submit"] {
     display: block;
@@ -248,11 +362,5 @@ const { postId, firebaseConfig } = Astro.props;
   }
   button[type="submit"]:hover {
     background-color: #0056b3;
-  }
-  img {
-    display: block;
-    margin-top: 10px;
-    border: 1px solid #eee;
-    border-radius: 4px;
   }
 </style>
