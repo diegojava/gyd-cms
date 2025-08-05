@@ -1,7 +1,7 @@
 // src/lib/auth-middleware.js
 import { getFirebaseAdmin } from './firebase-admin-config';
 
-const ADMIN_UID = "KPl7IQzMeIVVTlbEPeU9ytFagJg1";
+const ADMIN_UID = "3qdvuqFaIFTWkmiIhLsQ5Aw2VE43";
 
 export async function authorizeAdmin(request) {
   // Obtenemos la instancia de adminAuth llamando a la función
