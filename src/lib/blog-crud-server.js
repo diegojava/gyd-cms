@@ -125,49 +125,84 @@ export async function getPostByIdServer(postId) {
 export async function updatePostServer(postId, updatedData, newCoverImageBuffer = null) {
   const { adminDb, adminStorage } = getFirebaseAdmin();
   if (!adminDb || !adminStorage) {
-    throw new Error("La conexión con Firebase (adminDb o adminStorage) no está inicializada.");
+    throw new Error("La conexión con Firebase no está inicializada.");
   }
 
   try {
     const postRef = adminDb.collection("posts").doc(postId);
-    let finalDataToProcess = { ...updatedData };
-    delete finalDataToProcess.translations;
+    const dataToUpdate = {}; // Objeto para almacenar solo los campos que cambian
 
-    if (finalDataToProcess.pubDate) {
-      finalDataToProcess.pubDate = Timestamp.fromDate(new Date(finalDataToProcess.pubDate));
-    }
-
+    // --- 1. Manejar la imagen de portada ---
     if (newCoverImageBuffer) {
+      console.log("[updatePostServer] Subiendo nueva imagen de portada...");
       const bucket = adminStorage.bucket();
-      // ... (lógica para subir y borrar imagen antigua)
+
+      // Opcional: Borrar la imagen antigua para no dejar basura
+      const currentPostDoc = await postRef.get();
+      const oldImageUrl = currentPostDoc.exists ? currentPostDoc.data().coverImage : null;
+      if (oldImageUrl && oldImageUrl.includes("storage.googleapis.com")) {
+        try {
+          const oldFilePath = oldImageUrl.split(`${bucket.name}/`)[1].split('?')[0];
+          if (oldFilePath) await bucket.file(decodeURIComponent(oldFilePath)).delete();
+        } catch (e) {
+          console.warn("No se pudo borrar la imagen antigua:", e.message);
+        }
+      }
+
+      // Subir la nueva imagen
+      const fileName = `images/posts/${postId}-${Date.now()}`;
+      const file = bucket.file(fileName);
+      await file.save(newCoverImageBuffer);
+      await file.makePublic();
+      dataToUpdate.coverImage = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      console.log("[updatePostServer] Nueva imagen subida:", dataToUpdate.coverImage);
+
     } else if (updatedData.coverImage === null) {
-      const bucket = adminStorage.bucket();
-      // ... (lógica para borrar imagen existente)
+      // Si se marcó "Eliminar imagen actual"
+      console.log("[updatePostServer] Eliminando imagen de portada...");
+      dataToUpdate.coverImage = ""; // O FieldValue.delete() si prefieres
     }
 
+    // --- 2. Manejar los campos de texto y otros datos ---
+    if (updatedData.pubDate) {
+      dataToUpdate.pubDate = Timestamp.fromDate(new Date(updatedData.pubDate));
+    }
+    if (updatedData.categories) {
+      dataToUpdate.categories = updatedData.categories;
+    }
+    if (updatedData.draft !== undefined) {
+      dataToUpdate.draft = updatedData.draft;
+    }
+
+    // Usamos dot notation para actualizar campos anidados
     const esTrans = updatedData.translations?.es || {};
     const enTrans = updatedData.translations?.en || {};
 
-    if (esTrans.title !== undefined) finalDataToProcess['translations.es.title'] = esTrans.title;
-    if (enTrans.title !== undefined) finalDataToProcess['translations.en.title'] = enTrans.title;
-    if (esTrans.content !== undefined) finalDataToProcess['translations.es.content'] = isEmptyHtml(esTrans.content) ? admin.firestore.FieldValue.delete() : esTrans.content;
-    if (enTrans.content !== undefined) finalDataToProcess['translations.en.content'] = isEmptyHtml(enTrans.content) ? admin.firestore.FieldValue.delete() : enTrans.content;
-    if (esTrans.excerpt !== undefined) finalDataToProcess['translations.es.excerpt'] = isEmptyHtml(esTrans.excerpt) ? admin.firestore.FieldValue.delete() : esTrans.excerpt;
-    if (enTrans.excerpt !== undefined) finalDataToProcess['translations.en.excerpt'] = isEmptyHtml(enTrans.excerpt) ? admin.firestore.FieldValue.delete() : enTrans.excerpt;
-
-    if (esTrans.title !== undefined) finalDataToProcess['slug.es'] = generateSlug(esTrans.title);
-    if (enTrans.title !== undefined) finalDataToProcess['slug.en'] = generateSlug(enTrans.title);
-
-    const dataToUpdate = {};
-    for (const key in finalDataToProcess) {
-      if (finalDataToProcess[key] !== undefined) {
-        dataToUpdate[key] = finalDataToProcess[key];
-      }
+    for (const key in esTrans) {
+      dataToUpdate[`translations.es.${key}`] = esTrans[key];
+    }
+    for (const key in enTrans) {
+      dataToUpdate[`translations.en.${key}`] = enTrans[key];
     }
 
-    await postRef.update(dataToUpdate);
+    // Regenerar slugs si los títulos cambiaron
+    if (esTrans.title) {
+      dataToUpdate['slug.es'] = generateSlug(esTrans.title);
+    }
+    if (enTrans.title) {
+      dataToUpdate['slug.en'] = generateSlug(enTrans.title);
+    }
+
+    // --- 3. Ejecutar la actualización en Firestore ---
+    if (Object.keys(dataToUpdate).length > 0) {
+      await postRef.update(dataToUpdate);
+      console.log("[updatePostServer] Post actualizado con los siguientes campos:", Object.keys(dataToUpdate));
+    } else {
+      console.log("[updatePostServer] No hubo campos que actualizar.");
+    }
+
   } catch (error) {
-    console.error("[updatePostServer] Error:", error);
+    console.error("[updatePostServer] Error al actualizar el post:", error);
     throw error;
   }
 }
