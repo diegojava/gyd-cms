@@ -1,7 +1,6 @@
 ---
 import BlogPostForm from "../../../components/BlogPostForm.astro";
-import "/src/styles/global.css"; // Importar estilos globales
-import Nav from "../../../components/utils/Nav.astro";
+import { getAllZonesServer } from "../../../../lib/zones-crud-server.js"; // Importamos la función para obtener zonas
 
 // Para obtener el 'id' del post de la URL
 export async function getStaticPaths() {
@@ -20,23 +19,21 @@ const firebaseConfig = {
 };
 
 const { id } = Astro.params;
+const zones = await getAllZonesServer(); // Obtenemos la lista de zonas desde el servidor
 ---
 
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script
-      src="https://cdn.tiny.cloud/1/o3gjn8fjt8khcy7ni9081i6snzy3z0yt7yudepvcfvs8rtrj/tinymce/8/tinymce.min.js"
-      referrerpolicy="origin"
-      crossorigin="anonymous"></script>
     <title>Editar Post: {id}</title>
     <style>
       /* Estilos básicos */
     </style>
   </head>
   <body>
-    <Nav currentPage="posts" />
-    <BlogPostForm postId={id} firebaseConfig={firebaseConfig} />
+    <a href="/admin/dashboard">Volver al Dashboard</a>
+    <a href="/admin/posts">Ver Posts</a>
+    <BlogPostForm postId={id} firebaseConfig={firebaseConfig} zones={zones} />
   </body>
 </html>
