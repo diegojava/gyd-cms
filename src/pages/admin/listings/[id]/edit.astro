@@ -1,6 +1,6 @@
 ---
-import BlogPostForm from "../../../components/BlogPostForm.astro";
 import { getAllZonesServer } from "../../../../lib/zones-crud-server.js"; // Importamos la función para obtener zonas
+import ListingsPostForm from "../../../components/ListingsPostForm.astro";
 
 // Para obtener el 'id' del post de la URL
 export async function getStaticPaths() {
@@ -34,6 +34,6 @@ const zones = await getAllZonesServer(); // Obtenemos la lista de zonas desde el
   <body>
     <a href="/admin/dashboard">Volver al Dashboard</a>
     <a href="/admin/posts">Ver Posts</a>
-    <BlogPostForm postId={id} firebaseConfig={firebaseConfig} zones={zones} />
+    <ListingsPostForm postId={id} firebaseConfig={firebaseConfig} zones={zones} />
   </body>
 </html>
