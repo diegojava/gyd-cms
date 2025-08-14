@@ -1,4 +1,4 @@
-// src/pages/api/blog/[id].js
+// src/pages/api/listings/[id].js
 export const prerender = false; // <-- AÑADE ESTA LÍNEA
 
 import { getPostByIdServer, updatePostServer, deletePostServer } from '/src/lib/blog-crud-server';
@@ -6,15 +6,53 @@ import { authorizeAdmin } from '/src/lib/auth-middleware';
 import { Buffer } from 'node:buffer';
 
 export async function GET({ request, params }) {
+  // Primero, se verifica la autorización del administrador
   const authResult = await authorizeAdmin(request);
-  if (!authResult.authorized) { return new Response(JSON.stringify({ error: authResult.message }), { status: authResult.status, headers: { 'Content-Type': 'application/json' } }); }
+  if (!authResult.authorized) {
+    return new Response(JSON.stringify({ error: authResult.message }), {
+      status: authResult.status,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
   try {
-    const post = await getPostByIdServer(params.id);
-    if (!post) { return new Response(JSON.stringify({ error: 'Post no encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } }); }
-    return new Response(JSON.stringify(post), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const idAsString = params.id;
+
+    // Se convierte el ID de la URL (que es un string) a un número
+    const postId = parseInt(idAsString, 10);
+
+    // Se comprueba si el ID es un número válido. Si no, devuelve un error.
+    if (isNaN(postId)) {
+      return new Response(JSON.stringify({ error: 'El ID proporcionado no es un número válido' }), {
+        status: 400, // Bad Request
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Se llama a la función del servidor para obtener el post por su ID numérico
+    const post = await getPostByIdServer(postId);
+
+    // Si la base de datos no devuelve ningún post, se envía un error 404
+    if (!post) {
+      return new Response(JSON.stringify({ error: 'Post no encontrado' }), {
+        status: 404, // Not Found
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Si se encuentra el post, se envía como respuesta
+    return new Response(JSON.stringify(post), {
+      status: 200, // OK
+      headers: { 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Error al obtener post' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    // Si ocurre cualquier otro error inesperado, se captura y se envía un error 500
+    console.error('Error en GET /api/listings/[id]:', error);
+    return new Response(JSON.stringify({ error: 'Error interno del servidor al obtener el post' }), {
+      status: 500, // Internal Server Error
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
 
