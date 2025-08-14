@@ -38,10 +38,19 @@ export async function PUT({ request, params }) {
     const coverImageFile = formData.get('coverImageFile');
     let fileBuffer = null;
     if (coverImageFile && coverImageFile.size > 0) {
-        fileBuffer = Buffer.from(await coverImageFile.arrayBuffer());
+      fileBuffer = Buffer.from(await coverImageFile.arrayBuffer());
     }
 
     await updatePostServer(params.id, updatedData, fileBuffer);
+
+    // Después de que el post se creó correctamente, dispara el build.
+    if (import.meta.env.NETLIFY_BUILD_HOOK) {
+      await fetch(import.meta.env.NETLIFY_BUILD_HOOK, {
+        method: 'POST'
+      });
+      console.log('Build de Netlify disparado por creación de post.');
+    }
+
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Error al actualizar post: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
@@ -49,6 +58,7 @@ export async function PUT({ request, params }) {
 }
 
 export async function DELETE({ request, params }) {
+  return;
   const authResult = await authorizeAdmin(request);
   if (!authResult.authorized) { return new Response(JSON.stringify({ error: authResult.message }), { status: authResult.status, headers: { 'Content-Type': 'application/json' } }); }
 

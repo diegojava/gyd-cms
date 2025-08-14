@@ -64,10 +64,18 @@ export async function POST({ request }) {
     const coverImageFile = formData.get('coverImageFile');
     let fileBuffer = null;
     if (coverImageFile && coverImageFile.size > 0) {
-        fileBuffer = Buffer.from(await coverImageFile.arrayBuffer());
+      fileBuffer = Buffer.from(await coverImageFile.arrayBuffer());
     }
 
     const zoneId = await createZoneServer(zoneData, fileBuffer);
+
+    // Después de que el post se creó correctamente, dispara el build.
+    if (import.meta.env.NETLIFY_BUILD_HOOK) {
+      await fetch(import.meta.env.NETLIFY_BUILD_HOOK, {
+        method: 'POST'
+      });
+      console.log('Build de Netlify disparado por creación de post.');
+    }
 
     return new Response(JSON.stringify({ success: true, zoneId }), {
       status: 201, // 201 Created

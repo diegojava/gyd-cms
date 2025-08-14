@@ -6,7 +6,7 @@ import { Buffer } from 'node:buffer';
 export async function GET({ request }) {
   const authResult = await authorizeAdmin(request);
   console.log("Authorization result:", authResult);
-  
+
   if (!authResult.authorized) { return new Response(JSON.stringify({ error: authResult.message }), { status: authResult.status, headers: { 'Content-Type': 'application/json' } }); }
   try {
     const posts = await getAllPostsServer();
@@ -35,10 +35,19 @@ export async function POST({ request }) {
     const coverImageFile = formData.get('coverImageFile');
     let fileBuffer = null;
     if (coverImageFile && coverImageFile.size > 0) {
-        fileBuffer = Buffer.from(await coverImageFile.arrayBuffer());
+      fileBuffer = Buffer.from(await coverImageFile.arrayBuffer());
     }
 
     const postId = await createPostServer(postData, fileBuffer);
+
+    // Después de que el post se creó correctamente, dispara el build.
+    if (import.meta.env.NETLIFY_BUILD_HOOK) {
+      await fetch(import.meta.env.NETLIFY_BUILD_HOOK, {
+        method: 'POST'
+      });
+      console.log('Build de Netlify disparado por creación de post.');
+    }
+
     return new Response(JSON.stringify({ success: true, postId }), { status: 201, headers: { 'Content-Type': 'application/json' } });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Error al crear post: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });

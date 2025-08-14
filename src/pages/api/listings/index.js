@@ -48,10 +48,8 @@ export async function POST({ request }) {
       propertyType: formData.get("propertyType") || "departamento",
       status: formData.get("status") || "venta",
       address: formData.get("address") || "",
-
-      // 2. Leemos TODAS las amenidades seleccionadas en un array
+      zoneId: formData.get("zoneId") || null,
       amenities: formData.getAll("amenities"),
-
       draft: formData.get("draft") === "on",
       pubDate: formData.get("pubDate") || new Date().toISOString(),
       translations: {
@@ -75,6 +73,14 @@ export async function POST({ request }) {
 
     // 4. Enviamos el nuevo objeto a la función que lo guardará en la base de datos
     const listingId = await createListingServer(listingData, fileBuffer);
+
+    // Después de que el post se creó correctamente, dispara el build.
+    if (import.meta.env.NETLIFY_BUILD_HOOK) {
+      await fetch(import.meta.env.NETLIFY_BUILD_HOOK, {
+        method: 'POST'
+      });
+      console.log('Build de Netlify disparado por creación de post.');
+    }
 
     return new Response(JSON.stringify({ success: true, listingId }), {
       status: 201,
