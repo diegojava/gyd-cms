@@ -41,6 +41,12 @@ const { currentPage } = Astro.props;
           class:list={{ "font-bold underline": currentPage === "listings" }}
           >Departamentos</a>
       </li>
+      <li>
+        <a
+          href="/admin/gallery"
+          class:list={{ "font-bold underline": currentPage === "gallery" }}
+          >Galería</a>
+      </li>
     </ul>
   </div>
   <button

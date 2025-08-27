@@ -1,0 +1,199 @@
+---
+// src/pages/admin/gallery/index.astro
+import Nav from "../../components/utils/Nav.astro";
+import "/src/styles/global.css";
+
+const clientSideFirebaseConfig = {
+    apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
+    authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
+    appId: import.meta.env.PUBLIC_FIREBASE_APP_ID,
+};
+---
+
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Galería de Medios</title>
+        <style>
+            .gallery-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+            .gallery-item {
+                position: relative;
+                cursor: pointer;
+                border: 2px solid transparent;
+                transition: border-color 0.2s;
+            }
+            .gallery-item:hover {
+                border-color: #3b82f6;
+            }
+            .gallery-item img {
+                width: 100%;
+                height: 150px;
+                object-fit: cover;
+                border-radius: 0.5rem;
+            }
+            .upload-form {
+                border: 2px dashed #ccc;
+                padding: 2rem;
+                text-align: center;
+                border-radius: 0.5rem;
+                margin-bottom: 2rem;
+            }
+            .feedback {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #10b981;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.5s;
+            }
+        </style>
+    </head>
+    <body>
+        <Nav currentPage="gallery" />
+
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-6">
+                Galería de Medios
+            </h2>
+
+            <form id="upload-form" class="upload-form">
+                <h3 class="text-xl font-semibold mb-2">Subir Nueva Imagen</h3>
+                <p class="text-gray-500 mb-4">
+                    El archivo se guardará en `images/gallery/`.
+                </p>
+                <input
+                    type="file"
+                    name="imageFile"
+                    id="imageFileInput"
+                    required
+                    accept="image/*"
+                />
+                <button
+                    type="submit"
+                    class="mt-4 text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5"
+                    >Subir Imagen</button
+                >
+                <p id="upload-status" class="mt-2 text-sm"></p>
+            </form>
+
+            <div id="gallery-grid" class="gallery-grid">
+                <p id="gallery-status">Cargando imágenes...</p>
+            </div>
+        </section>
+
+        <div id="feedback-message" class="feedback">
+            ¡URL copiada al portapapeles!
+        </div>
+
+        <script
+            type="module"
+            define:vars={{ firebaseConfig: clientSideFirebaseConfig }}
+        >
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+            import {
+                getAuth,
+                onAuthStateChanged,
+            } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+
+            const galleryGrid = document.getElementById("gallery-grid");
+            const galleryStatus = document.getElementById("gallery-status");
+            const uploadForm = document.getElementById("upload-form");
+            const imageFileInput = document.getElementById("imageFileInput");
+            const uploadStatus = document.getElementById("upload-status");
+            const feedbackMessage = document.getElementById("feedback-message");
+
+            let idToken = null;
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    user.getIdToken().then((token) => {
+                        idToken = token;
+                        loadImages();
+                    });
+                } else {
+                    window.location.href = "/admin/login";
+                }
+            });
+
+            async function loadImages() {
+                if (!idToken) return;
+                galleryStatus.textContent = "Cargando imágenes...";
+                try {
+                    const response = await fetch("/api/gallery", {
+                        headers: { Authorization: `Bearer ${idToken}` },
+                    });
+                    const images = await response.json();
+
+                    galleryGrid.innerHTML = ""; // Limpiar
+                    if (images.length === 0) {
+                        galleryStatus.textContent =
+                            "No hay imágenes en la galería.";
+                        galleryGrid.appendChild(galleryStatus);
+                    } else {
+                        images.forEach((image) => {
+                            const item = document.createElement("div");
+                            item.className = "gallery-item";
+                            item.innerHTML = `<img src="${image.url}" alt="${image.name}" data-url="${image.url}" />`;
+                            galleryGrid.appendChild(item);
+                        });
+                    }
+                } catch (error) {
+                    galleryStatus.textContent = "Error al cargar las imágenes.";
+                }
+            }
+
+            uploadForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                if (!imageFileInput.files[0] || !idToken) return;
+
+                uploadStatus.textContent = "Subiendo...";
+                const formData = new FormData();
+                formData.append("imageFile", imageFileInput.files[0]);
+
+                try {
+                    const response = await fetch("/api/gallery", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${idToken}` },
+                        body: formData,
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        uploadStatus.textContent = "¡Subida con éxito!";
+                        uploadForm.reset();
+                        loadImages(); // Recargar la galería
+                    } else {
+                        uploadStatus.textContent = `Error: ${result.error}`;
+                    }
+                } catch (error) {
+                    uploadStatus.textContent = "Error de red al subir.";
+                }
+            });
+
+            galleryGrid.addEventListener("click", (e) => {
+                if (e.target.tagName === "IMG") {
+                    const url = e.target.dataset.url;
+                    navigator.clipboard.writeText(url).then(() => {
+                        feedbackMessage.style.opacity = "1";
+                        setTimeout(() => {
+                            feedbackMessage.style.opacity = "0";
+                        }, 2000);
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>
